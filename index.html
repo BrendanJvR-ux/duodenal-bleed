@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Duodenal Bleed</title>
+<title>Upper GI Bleed</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
   <header class="top">
-    <div class="title"><b>Duodenal bleed</b><span>Case 1 · fictional ulcer · training prototype</span></div>
+    <div class="title"><b>Upper GI bleed</b><span id="caseSub">Training prototype</span></div>
     <div class="vitals" aria-label="Patient status">
       <div class="vit" id="vTime"><small>TIME</small><span>0:00</span></div>
       <div class="vit" id="vHR"><small>HR</small><span>76</span></div>
@@ -23,8 +23,10 @@
     <div class="cue" id="cue" role="status" aria-live="polite"></div>
     <div class="cover" id="intro">
       <div class="box">
-        <h2>Duodenal bulb · active bleed</h2>
-        <p>There is fresh blood ahead. Steer to follow it to its source and control it, then decide when the site is clear and stable enough to sign off.</p>
+        <div class="pills" id="casePills"></div>
+        <h2 id="introTitle"></h2>
+        <div class="where" id="introWhere"></div>
+        <p id="introText"></p>
         <button class="btn primary" id="startBtn">Start (Space)</button>
       </div>
     </div>
@@ -76,11 +78,15 @@
       <div class="cap" id="rpCap"></div>
     </div>
     <ul class="fb" id="dbFeedback"></ul>
-    <div class="row"><button class="btn primary" id="retryBtn">Retry case (R)</button></div>
+    <div class="row"><button class="btn primary" id="retryBtn">Retry case (R)</button><button class="btn" id="nextBtn">Next case (N)</button></div>
+    <div class="pills center" id="dbPills"></div>
   </div>
 </div>
 
 <script src="config/config.js"></script>
+<script src="config/anatomy.js"></script>
+<script src="cases/oesophageal-varices.js"></script>
+<script src="cases/gastric-ulcer.js"></script>
 <script src="cases/duodenal-ulcer.js"></script>
 <script src="js/game.js"></script>
 </body>

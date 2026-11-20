@@ -78,3 +78,11 @@ body.forcepad .pad{display:grid}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .sr{position:absolute;left:-9999px}
+
+.pills{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+.pills.center{margin:10px 0 0}
+.pill{background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:3px 11px;font-size:12px;color:var(--muted)}
+.pill.on{color:var(--fg);border-color:var(--ok);background:#17352a}
+.cover .where{font-size:12px;color:#9fd8bd;margin-bottom:6px}
+.cover h2{font-size:15px}
+.cover p{font-size:12.5px}

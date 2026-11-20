@@ -45,20 +45,42 @@ frame.addEventListener('load', () => {
     const l = S().lesion, ey = l.y - tip.y, ex = l.x - tip.x, keys = [];
     if (Math.abs(ey) > 5) keys.push(ey < 0 ? 'up' : 'down'); if (Math.abs(ex) > 5) keys.push(ex > 0 ? 'right' : 'left');
     keys.forEach(x => k(x, 'keydown')); tick(Math.min(0.25, Math.max(0.04, Math.max(Math.abs(ey), Math.abs(ex)) / 600))); keys.forEach(x => k(x, 'keyup')); tick(0.45); } };
-  const fresh = () => { D.reset(true); };
+  const fresh = (i = 2) => { D.loadCase(i, true); };          // case 0 varices, 1 gastric ulcer, 2 duodenal ulcer (default)
   const badge = () => doc.getElementById('dbBadge').textContent;
 
   test('starts in the duodenum, live, with a blood trail and an active bleed', () => {
-    D.reset(false); eq(S().state, 'intro'); ok(S().totalBlood > 5, 'trail blood present before start');
+    D.loadCase(2, false); eq(S().state, 'intro'); ok(S().totalBlood > 5, 'trail blood present before start');
     k('use', 'keydown'); k('use', 'keyup'); eq(S().state, 'play'); eq(S().tool, 'wash', 'starts on Wash');
-    ok(S().bleeding, 'bleeding'); ok(S().lesion.d > 2.5 && S().lesion.d < 4, 'lesion a short way ahead');
+    ok(S().bleeding, 'bleeding'); ok(S().lesion.d > 2 && S().lesion.d < 5, 'lesion a short way ahead'); eq(S().region, 'd1', 'case 3 starts in the duodenal bulb');
   });
   test('arrows, Tab and Space are default-prevented during play (no page scroll or focus jump)', () => {
     fresh(); for (const n of ['up', 'down', 'left', 'right', 'next', 'prev', 'use']) { ok(k(n, 'keydown'), n + ' keydown'); ok(k(n, 'keyup'), n + ' keyup'); }
   });
-  test('Up/Down move the scope; releasing stops it; limits hold', () => {
-    fresh(); hold('up', 1); const z1 = S().z; ok(z1 > 0.4, 'moved forward'); tick(1); const z2 = S().z; tick(0.5); eq(S().z, z2, 'stopped after release');
-    hold('down', 4); eq(S().z, 0, 'cannot withdraw past the pylorus'); k('up', 'keydown'); tick(20); k('up', 'keyup'); ok(S().z <= 8, 'forward limit');
+  test('Up/Down move the scope; releasing stops it', () => {
+    fresh(); const z0 = S().z; hold('up', 1); const z1 = S().z; ok(z1 > z0 + 0.4, 'moved forward'); tick(1); const z2 = S().z; tick(0.5); eq(S().z, z2, 'stopped after release');
+    hold('down', 1); ok(S().z < z2, 'moved back');
+  });
+  test('the scope cannot pass beyond the first part of the duodenum', () => {
+    fresh(); k('up', 'keydown'); tick(30); k('up', 'keyup'); eq(S().z, D.ANATOMY.scopeMax, 'stopped at the end of D1'); eq(S().region, 'd1');
+    ok(D.ANATOMY.scopeMax < D.ANATOMY.end, 'stops short of the superior duodenal flexure');
+    ok(/beyond the first part of the duodenum/.test(doc.getElementById('cue').textContent), 'cue explains the limit');
+  });
+  test('the whole tract is walkable: D1 → pylorus → antrum → body → GOJ → oesophagus, depth in cm only increases with z', () => {
+    fresh(); const seen = [S().region]; let lastCm = S().cm; k('down', 'keydown');
+    for (let i = 0; i < 2400 && S().z > 0; i++) { tick(1 / 20); const r = S().region; if (seen[seen.length - 1] !== r) seen.push(r); ok(S().cm <= lastCm, 'cm decreases as we withdraw'); lastCm = S().cm; }
+    k('down', 'keyup'); eq(seen.join('>'), 'd1>antrum>body>cardia>oes', 'regions in anatomical order'); eq(S().z, 0); ok(/20 cm|goes no higher/.test(doc.getElementById('cue').textContent), 'upper limit cue');
+  });
+  test('each case starts in its own region: oesophagus, stomach, duodenum', () => {
+    fresh(0); eq(S().region, 'oes'); fresh(1); eq(S().region, 'body'); fresh(2); eq(S().region, 'd1');
+  });
+  test('lesions sit in the right organs: varices in the oesophagus, ulcers in stomach and duodenum', () => {
+    const [v, g, du] = [0, 1, 2].map(i => { D.loadCase(i, true); return D.CASE; }), reg = w => D.ANATOMY.regions.find(r => w < r.to).id;
+    eq(v.lesion.kind, 'varix'); eq(reg(v.lesion.w), 'oes'); eq(g.lesion.kind, 'ulcer'); ok(['cardia', 'body', 'antrum'].includes(reg(g.lesion.w)), 'gastric ulcer in the stomach');
+    eq(du.lesion.kind, 'ulcer'); eq(reg(du.lesion.w), 'd1'); ok(du.lesion.w < D.ANATOMY.scopeMax, 'duodenal ulcer reachable within D1');
+    ok(v.suitable.banding && !v.suitable.cautery && g.suitable.cautery && !g.suitable.banding && du.suitable.cautery && !du.suitable.banding, 'banding for varices, cautery for ulcers');
+  });
+  test('crossing a landmark names it', () => {
+    fresh(); k('down', 'keydown'); let seen = false; for (let i = 0; i < 600 && !seen; i++) { tick(1 / 20); seen = /Pylorus/.test(doc.getElementById('cue').textContent); } k('down', 'keyup'); ok(seen, 'pylorus cue');
   });
   test('a very quick tap still moves the scope a little', () => {
     fresh(); tap('up'); tick(0.5); ok(S().z > 0.01, 'tap moved'); tap('right'); tick(0.5); ok(S().steer > 0.005, 'steer tap moved');
@@ -67,7 +89,7 @@ frame.addEventListener('load', () => {
     fresh(); const x0 = S().lesion.x; hold('right', 1); tick(1); ok(S().steer > 0.3, 'steered right'); ok(S().lesion.x < x0 - 40, 'tissue moved left on screen');
     eq(S().tool, 'wash', 'Right arrow does not change the tool'); hold('left', 6); ok(S().steer < -0.7, 'steered fully left'); ok(S().steer >= -w.__duo.CONFIG.steerMax - 1e-9, 'left limit');
     ok(S().lesion.x > x0, 'tissue moved right on screen'); eq(S().tool, 'wash', 'Left arrow does not change the tool');
-    const z = S().z; eq(z, 0, 'steering does not move the scope along the lumen');
+    eq(S().z, D.CASE.start.z, 'steering does not move the scope along the lumen');
   });
   test('aiming needs both axes: correct depth alone is not enough, steering finishes the job', () => {
     fresh(); let n = 0; while (Math.abs(S().lesion.y - tip.y) > 4 && n++ < 100) { const key = S().lesion.y < tip.y ? 'up' : 'down'; k(key, 'keydown'); tick(0.05); k(key, 'keyup'); tick(0.4); }
@@ -143,7 +165,39 @@ frame.addEventListener('load', () => {
   test('instant retry with R restarts the whole case; Space on the debrief does not', () => {
     fresh(); tick(1); k('enter', 'keydown'); k('enter', 'keyup'); eq(S().state, 'ended');
     k('use', 'keydown'); k('use', 'keyup'); eq(S().state, 'ended', 'Space ignored');
-    k('r', 'keydown'); k('r', 'keyup'); const s = S(); eq(s.state, 'play'); eq(s.t, 0); eq(s.z, 0); ok(s.bleeding); eq(s.loss, 0); eq(s.controlledAt, null); eq(s.tool, 'wash'); ok(doc.getElementById('debrief').hidden);
+    k('r', 'keydown'); k('r', 'keyup'); const s = S(); eq(s.state, 'play'); eq(s.t, 0); eq(s.z, D.CASE.start.z); ok(s.bleeding); eq(s.loss, 0); eq(s.controlledAt, null); eq(s.tool, 'wash'); ok(doc.getElementById('debrief').hidden);
+  });
+
+
+  test('CASE 1 varices: wash reveals it, banding (Tab, Tab, Space) controls it, wash, reinspect, safe sign-off', () => {
+    fresh(0); align(); hold('use', 1.0); ok(S().stats.washRevealed, 'revealed'); ok(/varix/.test(doc.getElementById('cue').textContent));
+    tap('next'); tap('next'); eq(S().tool, 'banding'); eq(S().bands, 6); k('use', 'keydown'); k('use', 'keyup'); tick(0.1);
+    ok(!S().bleeding, 'bleeding stopped by the band'); eq(S().controlledBy, 'banding'); eq(S().bands, 5); eq(S().stats.bandsUsed, 1);
+    tap('prev'); tap('prev'); eq(S().tool, 'wash'); hold('use', 1.8); tick(4.5);
+    ok(S().stats.bestClearView >= 3, 'reinspected'); k('enter', 'keydown'); k('enter', 'keyup'); eq(badge(), 'SAFE SIGN-OFF');
+    const fb = doc.getElementById('dbFeedback').textContent; ok(/band on the varix/.test(fb) && /Bleeding stopped/.test(fb), 'banding feedback'); ok(!/Cautery/.test(fb), 'no cautery line when unused');
+  });
+  test('CASE 1 varices: cautery is the wrong tool: it never controls the bleed and says why', () => {
+    fresh(0); align(); tap('next'); eq(S().tool, 'cautery'); hold('use', 4); ok(S().bleeding, 'still bleeding'); ok(S().stats.cauteryWrong > 3, 'counted as wrong-tool contact');
+    ok(/not for varices/.test(doc.getElementById('cue').textContent), 'cue'); k('enter', 'keydown'); k('enter', 'keyup'); ok(/does not belong on a varix/.test(doc.getElementById('dbFeedback').textContent));
+  });
+  test('CASE 1 varices: a band fired away from the varix is wasted; the cap runs out after six', () => {
+    fresh(0); tap('next'); tap('next'); for (let i = 0; i < 6; i++) { k('use', 'keydown'); k('use', 'keyup'); tick(1.0); }
+    eq(S().stats.bandsWasted, 6); eq(S().bands, 0); ok(S().bleeding); eq(S().burns, 6, 'six nodules on normal mucosa');
+    k('use', 'keydown'); k('use', 'keyup'); ok(/No bands left/.test(doc.getElementById('cue').textContent), 'out of bands');
+  });
+  test('CASE 2 gastric ulcer: wash, cautery on the ulcer, wash, reinspect, safe sign-off; banding gives the gastric cue', () => {
+    fresh(1); align(); tap('next'); tap('next'); k('use', 'keydown'); k('use', 'keyup'); tick(0.05);
+    ok(/gastric ulcer is a flat crater/.test(doc.getElementById('cue').textContent), 'gastric banding cue'); ok(S().bleeding); eq(S().bands, 6, 'no band used');
+    tap('prev'); tap('prev'); eq(S().tool, 'wash'); hold('use', 1.0); ok(S().stats.washRevealed, 'revealed'); tap('next'); hold('use', 2.2); ok(!S().bleeding, 'controlled'); eq(S().controlledBy, 'cautery');
+    tap('prev'); hold('use', 1.8); tick(4.5); k('enter', 'keydown'); k('enter', 'keyup'); eq(badge(), 'SAFE SIGN-OFF');
+  });
+  test('cases can be switched from the intro with 1/2/3 and from the debrief with N and the pills', () => {
+    D.loadCase(0, false); k('use', 'keydown'); k('use', 'keyup'); eq(S().state, 'play'); k('enter', 'keydown'); k('enter', 'keyup'); eq(S().state, 'ended');
+    const key = ch => { w.dispatchEvent(new w.KeyboardEvent('keydown', { key: ch, bubbles: true, cancelable: true })); w.dispatchEvent(new w.KeyboardEvent('keyup', { key: ch, bubbles: true, cancelable: true })); };
+    key('n'); eq(S().caseIdx, 1); eq(S().state, 'play'); k('enter', 'keydown'); k('enter', 'keyup'); key('3'); eq(S().caseIdx, 2); eq(S().state, 'play');
+    k('enter', 'keydown'); k('enter', 'keyup'); doc.querySelector('#dbPills .pill[data-case="0"]').click(); eq(S().caseIdx, 0); eq(S().state, 'play');
+    D.loadCase(1, false); key('3'); eq(S().caseIdx, 2); eq(S().state, 'intro', 'intro keeps waiting for Space');
   });
 
   const failed = results.filter(r => !r.ok).length;

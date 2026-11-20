@@ -8,9 +8,10 @@ window.CONFIG = {
   cauteryContactSec: 1.6,    // continuous contact needed to coagulate (the "contact interval")
   cauteryContactRadius: 26,  // px: probe tip must be this close to the lesion centre
   cauteryDecay: 1.5,         // progress lost per second when contact is broken
-  washRadius: 48,            // px: water-jet footprint
+  washRadius: 56,            // px: water-jet footprint
   washClearRate: 5.0,        // blood cleared per second at the jet centre
   bandRadius: 36,            // px: banding cap
+  bandsLoaded: 6,            // bands on the ligation cap (varix case)
   bandCooldown: 0.9,         // s between banding attempts
   bleedMlPerSec: 16,         // real-time blood loss while the lesion bleeds
   lossLimitMl: 1500,         // patient decompensates here
