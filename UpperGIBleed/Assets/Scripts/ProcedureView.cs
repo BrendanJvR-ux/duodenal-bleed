@@ -29,6 +29,14 @@ public class ProcedureView : MonoBehaviour
     }
     static Color C(int r, int g, int b) => new Color(r / 255f, g / 255f, b / 255f);
 
+    /// <summary>A built-in primitive mesh with no collider. CreatePrimitive adds one by class name, which engine stripping removes from the WebGL build.</summary>
+    static GameObject Primitive(PrimitiveType t)
+    {
+        var go = new GameObject(t.ToString(), typeof(MeshFilter), typeof(MeshRenderer));
+        go.GetComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>(t + ".fbx");
+        return go;
+    }
+
     GameObject Prop(string name, Material m)
     {
         var src = props.transform.Find(name);
@@ -73,12 +81,12 @@ public class ProcedureView : MonoBehaviour
         if (p.Case.kind == LesionKind.Ulcer)
         {
             ulcerGo = Prop("Ulcer", matCream); ulcerGo.transform.SetParent(lesionRoot.transform, false); ulcerGo.transform.localScale = Vector3.one * p.Case.lesionRadius;
-            escharGo = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(escharGo.GetComponent<Collider>()); escharGo.transform.SetParent(lesionRoot.transform, false);
+            escharGo = Primitive(PrimitiveType.Sphere); escharGo.transform.SetParent(lesionRoot.transform, false);
             escharGo.transform.localScale = new Vector3(p.Case.lesionRadius * 0.9f, p.Case.lesionRadius * 0.9f, p.Case.lesionRadius * 0.12f); escharGo.GetComponent<Renderer>().sharedMaterial = matBrown; escharGo.SetActive(false);
             if (p.Case.style == "gastric")                   // folds converging on a gastric ulcer
                 for (int i = 0; i < 8; i++)
                 {
-                    var f = GameObject.CreatePrimitive(PrimitiveType.Capsule); Destroy(f.GetComponent<Collider>()); f.transform.SetParent(lesionRoot.transform, false);
+                    var f = Primitive(PrimitiveType.Capsule); f.transform.SetParent(lesionRoot.transform, false);
                     float an = i / 8f * Mathf.PI * 2 + 0.3f, r0 = p.Case.lesionRadius * 1.9f, len = p.Case.lesionRadius * 1.4f;
                     f.transform.localPosition = new Vector3(Mathf.Cos(an) * (r0 + len / 2), Mathf.Sin(an) * (r0 + len / 2), 0.02f);
                     f.transform.localRotation = Quaternion.Euler(0, 0, an * Mathf.Rad2Deg - 90); f.transform.localScale = new Vector3(0.05f, len / 2, 0.035f);
@@ -99,7 +107,7 @@ public class ProcedureView : MonoBehaviour
                 cords.Add(cord);
             }
         }
-        wellGo = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(wellGo.GetComponent<Collider>()); wellGo.transform.SetParent(lesionRoot.transform, false);
+        wellGo = Primitive(PrimitiveType.Sphere); wellGo.transform.SetParent(lesionRoot.transform, false);
         wellGo.transform.localPosition = new Vector3(0, 0, 0.01f); wellGo.GetComponent<Renderer>().sharedMaterial = wellMat;
         bandedGo = new GameObject("Banded"); bandedGo.transform.SetParent(lesionRoot.transform, false); bandedGo.SetActive(false);
         var nod = Prop("BandNodule", matNodule); nod.transform.SetParent(bandedGo.transform, false); var bnd = Prop("Band", matBand); bnd.transform.SetParent(bandedGo.transform, false);
@@ -140,7 +148,7 @@ public class ProcedureView : MonoBehaviour
         {
             var b = p.burns[i]; GameObject go;
             if (b.kind == "band") { go = new GameObject("WastedBand"); var n = Prop("BandNodule", matNodule); n.transform.SetParent(go.transform, false); var bd = Prop("Band", matBand); bd.transform.SetParent(go.transform, false); go.transform.localScale = Vector3.one * 0.1f; }
-            else { go = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(go.GetComponent<Collider>()); go.transform.localScale = new Vector3(0.09f, 0.09f, 0.03f); go.GetComponent<Renderer>().sharedMaterial = matBurn; }
+            else { go = Primitive(PrimitiveType.Sphere); go.transform.localScale = new Vector3(0.09f, 0.09f, 0.03f); go.GetComponent<Renderer>().sharedMaterial = matBurn; }
             go.transform.position = b.pos + b.normal * 0.005f; go.transform.rotation = Quaternion.LookRotation(b.normal, Vector3.forward);
             burnGos.Add(go);
         }
