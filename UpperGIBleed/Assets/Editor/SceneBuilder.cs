@@ -99,11 +99,13 @@ public static class SceneBuilder
             if (!present) { always.InsertArrayElementAtIndex(always.arraySize); always.GetArrayElementAtIndex(always.arraySize - 1).objectReferenceValue = sh; }
         }
         always.serializedObject.ApplyModifiedProperties();
-        // keep every URP variant: the materials are made at runtime, so the build cannot know which ones it needs
+        // Keep the post-processing variants (the volume profile lives in the scene, but a build once stripped UberPost anyway).
+        // Normal variant stripping stays ON: the ShaderRefs materials above mark the Lit variants the game needs as used, and with
+        // stripping off a WebGL build compiles 165k Lit variants (~14 hours).
         try
         {
             var strip = GraphicsSettings.GetRenderPipelineSettings<URPShaderStrippingSetting>();
-            if (strip != null) { strip.stripUnusedVariants = false; strip.stripUnusedPostProcessingVariants = false; strip.stripScreenCoordOverrideVariants = false; Debug.Log("SceneBuilder: URP variant stripping off"); }
+            if (strip != null) { strip.stripUnusedVariants = true; strip.stripUnusedPostProcessingVariants = false; strip.stripScreenCoordOverrideVariants = true; Debug.Log("SceneBuilder: URP stripping on, post-processing variants kept"); }
             else Debug.LogWarning("SceneBuilder: URPShaderStrippingSetting not found");
         }
         catch (System.Exception e) { Debug.LogWarning("SceneBuilder: could not change URP stripping: " + e.Message); }
