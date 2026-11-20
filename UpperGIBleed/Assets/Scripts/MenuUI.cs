@@ -124,7 +124,7 @@ public class MenuUI : MonoBehaviour
         var av = UIKit.ImageEl(row.transform, Profile.AvatarSprite(rec.avatar)); UIKit.Size(av.gameObject, 52, 52);
         UIKit.Size(UIKit.Label(row.transform, $"<b>{rec.name}</b>", 18, UIKit.Fg).go, 220, 52);
         var grid = UIKit.HStack(v.transform, 8, TextAnchor.MiddleCenter, true); UIKit.Size(grid.gameObject, -1, 64);
-        void Stat(string label, string val, Color col) { var box = UIKit.PanelEl(grid.transform, label, UIKit.Panel2); var l = UIKit.Label(box.transform, label, 11, UIKit.Muted, TextAlignmentOptions.Top); UIKit.Fill(l.go, 6); var t = UIKit.Label(box.transform, val, 22, col, TextAlignmentOptions.Bottom, true); UIKit.Fill(t.go, 6); }
+        void Stat(string label, string val, Color col) { var box = UIKit.PanelEl(grid.transform, label, UIKit.Panel2); UIKit.Size(box.gameObject, -1, 62); var l = UIKit.Label(box.transform, label, 11, UIKit.Muted, TextAlignmentOptions.Top); UIKit.Fill(l.go, 6); var t = UIKit.Label(box.transform, val, 22, col, TextAlignmentOptions.Bottom, true); UIKit.Fill(t.go, 6); }
         Stat("Score", rec.score.ToString(), UIKit.Fg); Stat("Coffee tokens", "☕ " + rec.tokens, UIKit.Coffee); Stat("Cases cleared", rec.cases.ToString(), UIKit.Fg);
         UIKit.Size(UIKit.Label(v.transform, rank >= 0 ? $"#{rank + 1} on this device's leaderboard. ☕ {rec.tokens} tokens added to your bank ({Profile.Tokens} total)." : $"☕ {rec.tokens} tokens added to your bank ({Profile.Tokens} total).", 13, UIKit.Muted, TextAlignmentOptions.Center).go, -1, 40);
         var brow = UIKit.HStack(v.transform, 10, TextAnchor.MiddleCenter, true); UIKit.Size(brow.gameObject, -1, 46);

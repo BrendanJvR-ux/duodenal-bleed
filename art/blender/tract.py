@@ -9,7 +9,9 @@ Builds and exports, into the output folder (default UpperGIBleed/Assets/Art):
                        Blender, which Unity imports as +Z. w (depth along the tract) = Y.
   tract_albedo.png     baked mucosa colour (u = angle round the wall, v = depth / END)
   props.fbx            ulcer crater, varix cord, banded nodule, wash nozzle, cautery probe,
-                       banding cap, scope shaft — each a separate object at the origin
+                       banding cap, scope shaft — each a separate object at the origin. Lathed props
+                       are built round Blender's Z, which Unity imports as +Y (ProcedureView.Prop
+                       re-orients them), and Blender +X arrives mirrored (Tract mirrors the mesh).
   avatars/avatar_N.png six clinician portraits (flat style) for the player profile
 
 Run from the project folder:
@@ -424,9 +426,9 @@ def build_props():
     band.data.materials.append(mat_simple("BandMat", (196, 172, 120), 0.4))
     objs.append(band)
     # Tools: built along +Z with the working tip at the origin and the shaft going -Z
-    wash = ring_profile_object("WashNozzle", [(0.0, 0.0), (0.05, 0.0), (0.09, -0.12), (0.12, -0.3), (0.12, -2.6), (0.0, -2.6)], 24, (170, 195, 210), 0.3)
+    wash = ring_profile_object("WashNozzle", [(0.0, 0.0), (0.05, 0.0), (0.09, -0.12), (0.11, -0.3), (0.11, -1.0)], 24, (170, 195, 210), 0.3)   # open-ended: the shaft continues it
     objs.append(wash)
-    probe = ring_profile_object("CauteryProbe", [(0.0, 0.0), (0.07, -0.02), (0.085, -0.08), (0.06, -0.15), (0.09, -0.2), (0.09, -2.6), (0.0, -2.6)], 24, (36, 40, 44), 0.35)
+    probe = ring_profile_object("CauteryProbe", [(0.0, 0.0), (0.07, -0.02), (0.085, -0.08), (0.06, -0.15), (0.09, -0.2), (0.09, -1.0)], 24, (36, 40, 44), 0.35)
     # metallic tip
     bpy.ops.mesh.primitive_uv_sphere_add(radius=0.075, segments=20, ring_count=12, location=(0, 0, 0))
     tip = bpy.context.active_object
@@ -435,7 +437,7 @@ def build_props():
     objs += [probe, tip]
     cap = ring_profile_object("BandingCap", [(0.0, 0.0), (0.42, 0.0), (0.42, -0.55), (0.36, -0.55), (0.36, -0.03), (0.0, -0.03)], 32, (200, 190, 255), 0.15, 0.3)
     objs.append(cap)
-    shaft = ring_profile_object("ScopeShaft", [(0.0, -2.6), (0.11, -2.6), (0.11, -0.25), (0.0, -0.25)], 24, (120, 125, 135), 0.4)
+    shaft = ring_profile_object("ScopeShaft", [(0.11, -2.6), (0.11, -0.2)], 24, (120, 125, 135), 0.4)
     objs.append(shaft)
     export_fbx(os.path.join(OUT, "props.fbx"), objs)
 

@@ -38,7 +38,7 @@ public class Tract : MonoBehaviour
         else if (longest == 0) mt.localRotation = Quaternion.Euler(0, -90, 0);    // +X -> +Z
         float len = b.size[longest];
         float scale = Anatomy.End / len;
-        mt.localScale = Vector3.one * scale;
+        mt.localScale = new Vector3(-scale, scale, scale);     // the FBX import mirrors Blender's X: mirror it back so the path and angles match Anatomy
         // put the start of the tube at z = 0
         var wb = mr.bounds;
         mt.localPosition += new Vector3(0, 0, -wb.min.z);
@@ -86,7 +86,7 @@ public class Tract : MonoBehaviour
         ov.transform.SetParent(mt, false);
         var om = Instantiate(Mesh); om.name = "BloodOverlayMesh";
         var ov_v = om.vertices; var ov_n = om.normals;
-        for (int i = 0; i < ov_v.Length; i++) ov_v[i] += ov_n[i] * (0.012f / mt.localScale.x);
+        for (int i = 0; i < ov_v.Length; i++) ov_v[i] += ov_n[i] * (0.012f / Mathf.Abs(mt.localScale.x));
         om.vertices = ov_v; om.RecalculateBounds();
         ov.AddComponent<MeshFilter>().sharedMesh = om;
         var ovr = ov.AddComponent<MeshRenderer>();

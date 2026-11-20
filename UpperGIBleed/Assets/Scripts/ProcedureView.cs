@@ -18,7 +18,7 @@ public class ProcedureView : MonoBehaviour
     }
 
     /// <summary>The scope light sits close to the wall in a narrow lumen, so scale it by the local radius (inverse square) to keep the exposure even.</summary>
-    public static float ScopeLightIntensity(float z) { float r = Anatomy.Radius(z) / 1.75f; return 2.5f * Mathf.Clamp(r * r, 0.08f, 1f); }
+    public static float ScopeLightIntensity(float z) { float r = Anatomy.Radius(z) / 1.75f; return 2.2f * Mathf.Clamp(r * r, 0.08f, 1f); }
 
     static Material Lit(Color c, float smooth = 0.5f, float metal = 0, Color? emission = null)
     {
@@ -33,7 +33,10 @@ public class ProcedureView : MonoBehaviour
     {
         var src = props.transform.Find(name);
         if (src == null) { Debug.LogWarning("props.fbx has no " + name); return new GameObject(name); }
-        var go = Instantiate(src.gameObject); go.name = name; go.transform.localPosition = Vector3.zero; go.transform.localRotation = Quaternion.identity; go.transform.localScale = Vector3.one;
+        // Blender lathes round its Z axis, which the FBX import turns into Unity +Y: wrap the mesh and turn it so the prop's axis is local +Z
+        var go = new GameObject(name);
+        var mesh = Instantiate(src.gameObject, go.transform); mesh.name = name + "Mesh";
+        mesh.transform.localPosition = Vector3.zero; mesh.transform.localRotation = Quaternion.Euler(90, 0, 0); mesh.transform.localScale = Vector3.one;
         foreach (var r in go.GetComponentsInChildren<Renderer>()) { r.sharedMaterial = m; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false; }
         return go;
     }
@@ -151,13 +154,13 @@ public class ProcedureView : MonoBehaviour
         float d = p.tipOnWall ? Mathf.Min(p.tipDist, 2.5f) - 0.05f : 1.5f;
         var tip = ray.origin + ray.direction * Mathf.Max(0.12f, d);
         toolRoot.transform.position = tip; toolRoot.transform.rotation = Quaternion.LookRotation(ray.direction, cam.transform.up);
-        // the tool bodies run 2.6 units back from the tip: shorten them so they never reach the camera in a narrow lumen
-        float bodyScale = Mathf.Clamp((Mathf.Max(0.12f, d) - 0.14f) / 2.6f, 0.05f, 0.5f);
+        // the tool bodies run 1 unit back from the tip: shorten them so they never reach the camera in a narrow lumen
+        float bodyScale = Mathf.Clamp((Mathf.Max(0.12f, d) - 0.12f) / 1.0f, 0.12f, 0.5f);
         foreach (var g in new[] { washGo, cauteryGo }) g.transform.localScale = new Vector3(0.5f, 0.5f, bodyScale);
         var anchorVp = p.TipViewport(p.probeAng); anchorVp = (anchorVp - new Vector2(0.5f, 0.5f)) * 1.35f + new Vector2(0.5f, 0.5f);
         var anchor = cam.ViewportToWorldPoint(new Vector3(anchorVp.x, anchorVp.y, 0.08f));
         var toTip = tip - anchor; shaft.transform.position = tip; shaft.transform.rotation = Quaternion.LookRotation(toTip.normalized, cam.transform.up);
-        shaft.transform.localScale = new Vector3(0.5f, 0.5f, toTip.magnitude / 2.35f);
+        shaft.transform.localScale = new Vector3(0.5f, 0.5f, toTip.magnitude / 2.4f);
 
         bool live = p.state == Procedure.State.Play;
         if (p.washing && live) { if (!washPs.isPlaying) washPs.Play(); } else if (washPs.isPlaying) washPs.Stop();

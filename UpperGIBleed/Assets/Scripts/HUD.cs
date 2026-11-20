@@ -195,13 +195,13 @@ public class HUD : MonoBehaviour
         var srow = UIKit.HStack(v.transform, 8, TextAnchor.MiddleCenter, true); UIKit.Size(srow.gameObject, -1, 64);
         void Stat(string label, string val, Color col)
         {
-            var box = UIKit.PanelEl(srow.transform, label, UIKit.Panel2); var l = UIKit.Label(box.transform, label, 11, UIKit.Muted, TextAlignmentOptions.Top); UIKit.Fill(l.go, 6);
+            var box = UIKit.PanelEl(srow.transform, label, UIKit.Panel2); UIKit.Size(box.gameObject, -1, 62); var l = UIKit.Label(box.transform, label, 11, UIKit.Muted, TextAlignmentOptions.Top); UIKit.Fill(l.go, 6);
             var t = UIKit.Label(box.transform, val, 20, col, TextAlignmentOptions.Bottom, true); UIKit.Fill(t.go, 6);
         }
         Stat("Case score", $"{r.score} / 1000", r.Fail ? UIKit.Bad : UIKit.Fg); Stat("Coffee tokens", r.Fail ? "☕ 0" : $"☕ {r.tokens}", r.Fail ? UIKit.Bad : UIKit.Coffee);
         Stat("Time", $"{Procedure.Mmss(p.t)} (par {Procedure.Mmss(r.par)})", r.TimeFactor > 0.5f ? UIKit.Fg : UIKit.Warn); Stat("Blood loss", $"{Mathf.RoundToInt(p.loss)} mL", r.BloodFactor > 0.5f ? UIKit.Fg : UIKit.Warn);
         var grid = UIKit.HStack(v.transform, 8, TextAnchor.MiddleCenter, true); UIKit.Size(grid.gameObject, -1, 50);
-        void Small(string label, string val) { var box = UIKit.PanelEl(grid.transform, label, UIKit.Panel2); var l = UIKit.Label(box.transform, label, 10, UIKit.Muted, TextAlignmentOptions.Top); UIKit.Fill(l.go, 5); var t = UIKit.Label(box.transform, val, 14, UIKit.Fg, TextAlignmentOptions.Bottom, true); UIKit.Fill(t.go, 5); }
+        void Small(string label, string val) { var box = UIKit.PanelEl(grid.transform, label, UIKit.Panel2); UIKit.Size(box.gameObject, -1, 48); var l = UIKit.Label(box.transform, label, 10, UIKit.Muted, TextAlignmentOptions.Top); UIKit.Fill(l.go, 5); var t = UIKit.Label(box.transform, val, 14, UIKit.Fg, TextAlignmentOptions.Bottom, true); UIKit.Fill(t.go, 5); }
         Small("Bleed control", p.controlledAt == null ? "not achieved" : Procedure.Mmss(p.controlledAt.Value)); Small("Source found", p.stats.tFound == null ? "never" : Procedure.Mmss(p.stats.tFound.Value));
         Small("Tools used", string.Join(", ", p.stats.toolsUsed) + (p.stats.bandAttempts > 0 ? (p.stats.toolsUsed.Count > 0 ? ", " : "") + "Banding" : "") is var tu && tu.Length > 0 ? tu : "none"); Small("Overshoots", p.stats.overshoots.ToString());
         foreach (var (tag, text, col) in p.Feedback())
