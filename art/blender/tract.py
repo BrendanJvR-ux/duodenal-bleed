@@ -121,7 +121,8 @@ def radius(th, w):
 
 def wall_point(th, w):
     r = radius(th, w)
-    return Vector((px(w) + r * math.cos(th), w, py(w) + r * math.sin(th)))   # along +Y
+    # along +Y; Blender z is negated because Unity's FBX import (plus the tube's 90° turn in Tract.Setup) maps Blender z to Unity -Y
+    return Vector((px(w) + r * math.cos(th), w, -(py(w) + r * math.sin(th))))
 
 
 # ----------------------------------------------------------------------------- helpers

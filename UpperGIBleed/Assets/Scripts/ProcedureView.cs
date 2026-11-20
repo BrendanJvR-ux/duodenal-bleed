@@ -33,10 +33,10 @@ public class ProcedureView : MonoBehaviour
     {
         var src = props.transform.Find(name);
         if (src == null) { Debug.LogWarning("props.fbx has no " + name); return new GameObject(name); }
-        // Blender lathes round its Z axis, which the FBX import turns into Unity +Y: wrap the mesh and turn it so the prop's axis is local +Z
+        // Blender lathes round its Z axis, which the FBX import keeps as Unity +Z (the tract, built along Blender Y, arrives along Unity Y and is turned in Tract.Setup)
         var go = new GameObject(name);
         var mesh = Instantiate(src.gameObject, go.transform); mesh.name = name + "Mesh";
-        mesh.transform.localPosition = Vector3.zero; mesh.transform.localRotation = Quaternion.Euler(90, 0, 0); mesh.transform.localScale = Vector3.one;
+        mesh.transform.localPosition = Vector3.zero; mesh.transform.localRotation = Quaternion.identity; mesh.transform.localScale = Vector3.one;
         foreach (var r in go.GetComponentsInChildren<Renderer>()) { r.sharedMaterial = m; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false; }
         return go;
     }

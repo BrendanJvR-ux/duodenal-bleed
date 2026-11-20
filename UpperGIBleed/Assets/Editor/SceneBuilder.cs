@@ -18,6 +18,7 @@ public static class SceneBuilder
     {
         FixImports();
         ImportTmpEssentials();
+        MakeShaderReferences();
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         var camGo = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener)); camGo.tag = "MainCamera";
         var cam = camGo.GetComponent<Camera>(); cam.fieldOfView = 100; cam.nearClipPlane = 0.02f;
@@ -62,6 +63,44 @@ public static class SceneBuilder
             var ai = AssetImporter.GetAtPath($"Assets/Resources/Art/avatars/avatar_{i}.png") as TextureImporter;
             if (ai != null) { ai.alphaIsTransparency = true; ai.mipmapEnabled = false; ai.maxTextureSize = 256; ai.SaveAndReimport(); }
         }
+    }
+
+    /// <summary>
+    /// The game builds all its materials at runtime with Shader.Find, so nothing in the project would otherwise reference the URP
+    /// shaders and a player build could strip them (and their transparent / emission variants). These material assets keep them in.
+    /// </summary>
+    static void MakeShaderReferences()
+    {
+        Directory.CreateDirectory("Assets/Resources/ShaderRefs");
+        void Ref(string name, string shader, System.Action<Material> setup = null)
+        {
+            string path = $"Assets/Resources/ShaderRefs/{name}.mat";
+            var sh = Shader.Find(shader); if (sh == null) { Debug.LogError("shader not found: " + shader); return; }
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null) { m = new Material(sh); AssetDatabase.CreateAsset(m, path); } else m.shader = sh;
+            setup?.Invoke(m); EditorUtility.SetDirty(m);
+        }
+        Ref("LitOpaque", "Universal Render Pipeline/Lit");
+        Ref("LitTransparent", "Universal Render Pipeline/Lit", m => { Tract.MakeTransparent(m); });
+        Ref("LitEmissive", "Universal Render Pipeline/Lit", m => { m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", Color.red); m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive; });
+        Ref("ParticlesUnlit", "Universal Render Pipeline/Particles/Unlit", m => { Tract.MakeTransparent(m); });
+        AssetDatabase.SaveAssets();
+        var always = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/GraphicsSettings.asset")[0]).FindProperty("m_AlwaysIncludedShaders");
+        foreach (var shName in new[] { "Universal Render Pipeline/Lit", "Universal Render Pipeline/Particles/Unlit", "Sprites/Default", "UI/Default" })
+        {
+            var sh = Shader.Find(shName); if (sh == null) continue; bool present = false;
+            for (int i = 0; i < always.arraySize; i++) if (always.GetArrayElementAtIndex(i).objectReferenceValue == sh) present = true;
+            if (!present) { always.InsertArrayElementAtIndex(always.arraySize); always.GetArrayElementAtIndex(always.arraySize - 1).objectReferenceValue = sh; }
+        }
+        always.serializedObject.ApplyModifiedProperties();
+        // keep every URP variant: the materials are made at runtime, so the build cannot know which ones it needs
+        try
+        {
+            var strip = GraphicsSettings.GetRenderPipelineSettings<URPShaderStrippingSetting>();
+            if (strip != null) { strip.stripUnusedVariants = false; strip.stripUnusedPostProcessingVariants = false; strip.stripScreenCoordOverrideVariants = false; Debug.Log("SceneBuilder: URP variant stripping off"); }
+            else Debug.LogWarning("SceneBuilder: URPShaderStrippingSetting not found");
+        }
+        catch (System.Exception e) { Debug.LogWarning("SceneBuilder: could not change URP stripping: " + e.Message); }
     }
 
     static void ImportTmpEssentials()
