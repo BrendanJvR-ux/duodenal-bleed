@@ -2,92 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Upper GI Bleed</title>
-<link rel="stylesheet" href="css/style.css">
+<style>
+body{margin:0;background:#0b0f13;color:#e8eef2;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:grid;place-items:center;min-height:100vh;padding:16px;box-sizing:border-box}
+.card{max-width:520px;width:100%;background:#131a20;border:1px solid #26323c;border-radius:16px;padding:26px}
+h1{margin:0 0 4px;font-size:26px}
+p{color:#8c9aa5;margin:0 0 18px}
+a.btn{display:block;text-align:center;padding:14px;border-radius:10px;background:#1f6f54;color:#fff;text-decoration:none;font-weight:700;margin-bottom:10px}
+a.btn.alt{background:#1a232b;color:#e8eef2;border:1px solid #26323c;font-weight:600}
+small{display:block;color:#8c9aa5;margin-top:14px;font-size:12.5px}
+kbd{background:#1a232b;border:1px solid #26323c;border-bottom-width:2px;border-radius:5px;padding:0 5px;font-size:12px}
+</style>
 </head>
 <body>
-<div id="app">
-  <header class="top">
-    <div class="title"><b>Upper GI bleed</b><span id="caseSub">Training prototype</span></div>
-    <div class="vitals" aria-label="Patient status">
-      <div class="vit" id="vTime"><small>TIME</small><span>0:00</span></div>
-      <div class="vit" id="vHR"><small>HR</small><span>76</span></div>
-      <div class="vit" id="vBP"><small>BP</small><span>124/77</span></div>
-      <div class="vit" id="vLoss"><small>LOSS</small><span>0 mL</span></div>
-    </div>
-  </header>
-
-  <section class="view" id="view">
-    <canvas id="scope" aria-label="Endoscopic view of the duodenal bulb"></canvas>
-    <div class="cue" id="cue" role="status" aria-live="polite"></div>
-    <div class="cover" id="intro">
-      <div class="box">
-        <div class="pills" id="casePills"></div>
-        <h2 id="introTitle"></h2>
-        <div class="where" id="introWhere"></div>
-        <p id="introText"></p>
-        <button class="btn primary" id="startBtn">Start (Space)</button>
-      </div>
-    </div>
-    <div class="cover mid" id="pauseOv" hidden>
-      <div class="box"><h2>Paused</h2><p>The bleeding is frozen while paused.</p><button class="btn primary" id="resumeBtn">Resume (P)</button></div>
-    </div>
-  </section>
-
-  <div class="tools" id="tools">
-    <button class="step" id="prevTool" aria-label="Previous attachment">◀</button>
-    <div class="chip" data-i="0" style="--c:var(--wash)"><i></i>Wash</div>
-    <div class="chip" data-i="1" style="--c:var(--cautery)"><i></i>Cautery</div>
-    <div class="chip" data-i="2" style="--c:var(--banding)"><i></i>Banding</div>
-    <button class="step" id="nextTool" aria-label="Next attachment">▶</button>
-  </div>
-  <div class="toolLabel" id="toolLabel"></div>
-
-  <div class="row">
-    <button class="btn" id="pauseBtn">Pause (P)</button>
-    <button class="btn danger" id="signBtn">Sign off site (Enter)</button>
-  </div>
-  <div class="keys"><kbd>↑</kbd><kbd>↓</kbd> forward / back · <kbd>←</kbd><kbd>→</kbd> steer · <kbd>Tab</kbd> attachment · <kbd>Space</kbd> use</div>
-
-  <div class="pad" id="pad">
-    <div class="dpad">
-      <button class="u" data-act="up" aria-label="Forward">▲</button>
-      <button class="l" data-act="left" aria-label="Steer left">◀</button>
-      <button class="d" data-act="down" aria-label="Back">▼</button>
-      <button class="r" data-act="right" aria-label="Steer right">▶</button>
-    </div>
-    <div class="grp tool">
-      <button data-act="prev">◀ Tool</button>
-      <button data-act="next">Tool ▶</button>
-    </div>
-    <button class="use" data-act="use">USE</button>
-  </div>
+<div class="card">
+  <h1>Upper GI Bleed</h1>
+  <p>Endoscopic haemostasis trainer with fictional patients: find the bleed, pick the right attachment, control it, re-inspect, sign off. Earn coffee tokens.</p>
+  <a class="btn" href="play/">Play (Unity · 3D)</a>
+  <a class="btn alt" href="web/">Web prototype (canvas · 2D)</a>
+  <small><kbd>↑</kbd><kbd>↓</kbd> scope forward / back · <kbd>←</kbd><kbd>→</kbd> rotate the tip round the wall · <kbd>Tab</kbd> attachment · <kbd>Space</kbd> use · <kbd>Enter</kbd> sign off · <kbd>P</kbd> pause</small>
 </div>
-
-<div class="modal" id="debrief" hidden>
-  <div class="card" role="dialog" aria-labelledby="dbTitle">
-    <span class="badge" id="dbBadge"></span>
-    <h2 id="dbTitle"></h2>
-    <div id="dbLead" class="cap"></div>
-    <div class="grid" id="dbStats"></div>
-    <div class="replay">
-      <canvas id="replay" width="600" height="190"></canvas>
-      <div class="legend" id="dbLegend"></div>
-      <div class="rctl"><button class="btn" id="rpPlay">▶ Replay</button><input type="range" id="rpScrub" min="0" max="1000" value="1000" aria-label="Replay position"></div>
-      <div class="cap" id="rpCap"></div>
-    </div>
-    <ul class="fb" id="dbFeedback"></ul>
-    <div class="row"><button class="btn primary" id="retryBtn">Retry case (R)</button><button class="btn" id="nextBtn">Next case (N)</button></div>
-    <div class="pills center" id="dbPills"></div>
-  </div>
-</div>
-
-<script src="config/config.js"></script>
-<script src="config/anatomy.js"></script>
-<script src="cases/oesophageal-varices.js"></script>
-<script src="cases/gastric-ulcer.js"></script>
-<script src="cases/duodenal-ulcer.js"></script>
-<script src="js/game.js"></script>
 </body>
 </html>
