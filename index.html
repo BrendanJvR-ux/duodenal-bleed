@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Duodenal Bleed</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="title"><b>Duodenal bleed</b><span>Case 1 · fictional ulcer · training prototype</span></div>
+    <div class="vitals" aria-label="Patient status">
+      <div class="vit" id="vTime"><small>TIME</small><span>0:00</span></div>
+      <div class="vit" id="vHR"><small>HR</small><span>76</span></div>
+      <div class="vit" id="vBP"><small>BP</small><span>124/77</span></div>
+      <div class="vit" id="vLoss"><small>LOSS</small><span>0 mL</span></div>
+    </div>
+  </header>
+
+  <section class="view" id="view">
+    <canvas id="scope" aria-label="Endoscopic view of the duodenal bulb"></canvas>
+    <div class="cue" id="cue" role="status" aria-live="polite"></div>
+    <div class="cover" id="intro">
+      <div class="box">
+        <h2>Duodenal bulb · active bleed</h2>
+        <p>There is fresh blood ahead. Follow it to its source and control it, then decide when the site is clear and stable enough to sign off.</p>
+        <button class="btn primary" id="startBtn">Start (Space)</button>
+      </div>
+    </div>
+    <div class="cover mid" id="pauseOv" hidden>
+      <div class="box"><h2>Paused</h2><p>The bleeding is frozen while paused.</p><button class="btn primary" id="resumeBtn">Resume (P)</button></div>
+    </div>
+  </section>
+
+  <div class="tools" id="tools">
+    <button class="step" id="prevTool" aria-label="Previous attachment">◀</button>
+    <div class="chip" data-i="0" style="--c:var(--wash)"><i></i>Wash</div>
+    <div class="chip" data-i="1" style="--c:var(--cautery)"><i></i>Cautery</div>
+    <div class="chip" data-i="2" style="--c:var(--banding)"><i></i>Banding</div>
+    <button class="step" id="nextTool" aria-label="Next attachment">▶</button>
+  </div>
+  <div class="toolLabel" id="toolLabel"></div>
+
+  <div class="row">
+    <button class="btn" id="pauseBtn">Pause (P)</button>
+    <button class="btn danger" id="signBtn">Sign off site (Enter)</button>
+  </div>
+  <div class="keys"><kbd>↑</kbd> forward · <kbd>↓</kbd> back · <kbd>←</kbd><kbd>→</kbd> attachment · <kbd>Space</kbd> use</div>
+
+  <div class="pad" id="pad">
+    <div class="grp scope">
+      <button data-act="up">▲ Forward</button>
+      <button data-act="down">▼ Back</button>
+    </div>
+    <div class="grp">
+      <button data-act="prev">◀ Tool</button>
+      <button data-act="next">Tool ▶</button>
+    </div>
+    <button class="use" data-act="use">USE</button>
+  </div>
+</div>
+
+<div class="modal" id="debrief" hidden>
+  <div class="card" role="dialog" aria-labelledby="dbTitle">
+    <span class="badge" id="dbBadge"></span>
+    <h2 id="dbTitle"></h2>
+    <div id="dbLead" class="cap"></div>
+    <div class="grid" id="dbStats"></div>
+    <div class="replay">
+      <canvas id="replay" width="600" height="190"></canvas>
+      <div class="legend" id="dbLegend"></div>
+      <div class="rctl"><button class="btn" id="rpPlay">▶ Replay</button><input type="range" id="rpScrub" min="0" max="1000" value="1000" aria-label="Replay position"></div>
+      <div class="cap" id="rpCap"></div>
+    </div>
+    <ul class="fb" id="dbFeedback"></ul>
+    <div class="row"><button class="btn primary" id="retryBtn">Retry case (R)</button></div>
+  </div>
+</div>
+
+<script src="config/config.js"></script>
+<script src="cases/duodenal-ulcer.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

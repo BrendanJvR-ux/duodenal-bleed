@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Duodenal Bleed tests</title>
+<style>
+body{font:14px/1.5 system-ui,sans-serif;background:#0b0f13;color:#e8eef2;margin:0;padding:16px;max-width:760px}
+h1{font-size:18px} .sum{font-weight:700;margin:8px 0 14px}
+.t{padding:4px 8px;border-left:4px solid #5fd38d;background:#131a20;margin:4px 0}
+.t.fail{border-color:#ff5d57} .t small{display:block;color:#ff9a96;white-space:pre-wrap}
+iframe{position:absolute;left:-9999px;width:900px;height:1200px;border:0}
+</style>
+</head>
+<body>
+<h1>Duodenal Bleed: end-to-end tests</h1>
+<div class="sum" id="sum">Running…</div>
+<div id="out"></div>
+<iframe id="g" src="../index.html?nopause=1"></iframe>
+<script>
+// Drives the real game page through real KeyboardEvents (arrows, Space, Enter, P, R) and advances the
+// simulation deterministically with __duo.tick(), so every check below uses only the five play keys.
+const frame = document.getElementById('g');
+const results = [];
+function test(name, fn) {
+  try { fn(); results.push({ name, ok: true }); }
+  catch (e) { results.push({ name, ok: false, err: e.message || String(e) }); }
+}
+function eq(a, b, msg) { if (a !== b) throw new Error((msg || 'expected equal') + `: got ${JSON.stringify(a)}, wanted ${JSON.stringify(b)}`); }
+function ok(c, msg) { if (!c) throw new Error(msg || 'expected truthy'); }
+
+frame.addEventListener('load', () => {
+  const w = frame.contentWindow, D = w.__duo, doc = w.document;
+  D.manual(true);
+  const KEYS = { up: ['ArrowUp', 'ArrowUp'], down: ['ArrowDown', 'ArrowDown'], prev: ['ArrowLeft', 'ArrowLeft'], next: ['ArrowRight', 'ArrowRight'],
+    use: [' ', 'Space'], enter: ['Enter', 'Enter'], p: ['p', 'KeyP'], r: ['r', 'KeyR'] };
+  const k = (name, type, repeat = false) => { const [key, code] = KEYS[name]; const e = new w.KeyboardEvent(type, { key, code, repeat, bubbles: true, cancelable: true }); w.dispatchEvent(e); return e.defaultPrevented; };
+  const S = () => D.snapshot(), tick = s => D.tick(s);
+  const tip = { x: 320 + 150 * Math.cos(50 * Math.PI / 180), y: 320 + 150 * Math.sin(50 * Math.PI / 180) };
+  const dist = () => { const l = S().lesion; return l.vis ? Math.hypot(l.x - tip.x, l.y - tip.y) : Infinity; };
+  const hold = (n, sec) => { k(n, 'keydown'); tick(sec); k(n, 'keyup'); };
+  const tap = n => { k(n, 'keydown'); k(n, 'keyup'); };
+  // aim with short ↑/↓ taps only
+  const align = () => { let n = 0; while (dist() > 9 && n++ < 80) { const e = S().lesion.d - 1.533, key = e > 0 ? 'up' : 'down'; k(key, 'keydown'); tick(Math.min(0.25, Math.max(0.04, Math.abs(e) * 0.35))); k(key, 'keyup'); tick(0.45); } };
+  const fresh = () => { D.reset(true); };
+  const badge = () => doc.getElementById('dbBadge').textContent;
+
+  test('starts in the duodenum, live, with a blood trail and an active bleed', () => {
+    D.reset(false); eq(S().state, 'intro'); ok(S().totalBlood > 5, 'trail blood present before start');
+    k('use', 'keydown'); k('use', 'keyup'); eq(S().state, 'play'); eq(S().tool, 'wash', 'starts on Wash');
+    ok(S().bleeding, 'bleeding'); ok(S().lesion.d > 2.5 && S().lesion.d < 4, 'lesion a short way ahead');
+  });
+  test('arrows and Space are default-prevented (no page scroll)', () => {
+    fresh(); for (const n of ['up', 'down', 'prev', 'next', 'use']) { ok(k(n, 'keydown'), n + ' keydown'); ok(k(n, 'keyup'), n + ' keyup'); }
+  });
+  test('Up/Down move the scope; releasing stops it; limits hold', () => {
+    fresh(); hold('up', 1); const z1 = S().z; ok(z1 > 0.4, 'moved forward'); tick(1); const z2 = S().z; tick(0.5); eq(S().z, z2, 'stopped after release');
+    hold('down', 4); eq(S().z, 0, 'cannot withdraw past the pylorus'); k('up', 'keydown'); tick(20); k('up', 'keyup'); ok(S().z <= 8, 'forward limit');
+  });
+  test('a very quick tap still moves the scope a little', () => {
+    fresh(); tap('up'); tick(0.5); ok(S().z > 0.01, 'tap moved');
+  });
+  test('tool cycle is Wash→Cautery→Banding→Wash, one step per keypress even when held', () => {
+    fresh(); const seq = [S().tool]; for (let i = 0; i < 3; i++) { tap('next'); seq.push(S().tool); }
+    eq(seq.join('>'), 'wash>cautery>banding>wash');
+    tap('prev'); eq(S().tool, 'banding', 'Left from Wash wraps to Banding');
+    k('next', 'keydown'); for (let i = 0; i < 8; i++) k('next', 'keydown', true); k('next', 'keyup'); eq(S().tool, 'wash', 'held Right advanced once');
+  });
+  test('switching tools while Space is held stops the action and needs a fresh press', () => {
+    fresh(); k('use', 'keydown'); tick(0.3); ok(S().washing, 'washing while held');
+    tap('next'); tick(0.5); eq(S().tool, 'cautery'); ok(!S().cauteryOn && !S().washing, 'nothing active after switch'); eq(S().armed, false);
+    k('use', 'keyup'); k('use', 'keydown'); tick(0.2); ok(S().cauteryOn, 'fresh press activates'); k('use', 'keyup');
+  });
+  test('releasing Space stops wash and cautery immediately', () => {
+    fresh(); k('use', 'keydown'); tick(0.2); ok(S().washing); k('use', 'keyup'); tick(0.05); ok(!S().washing);
+    tap('next'); k('use', 'keydown'); tick(0.2); ok(S().cauteryOn); k('use', 'keyup'); tick(0.05); ok(!S().cauteryOn);
+  });
+  test('wash clears blood and reveals the source while it is still bleeding', () => {
+    fresh(); align(); tick(1.5); hold('use', 1.2); const s = S();
+    ok(s.cover < 0.1, 'site cleared'); ok(s.stats.washRevealed, 'source revealed'); ok(s.bleeding, 'still bleeding'); ok(s.stats.washOnSrc > 1, 'wash on source');
+  });
+  test('cautery away from the source leaves it bleeding; on the source it controls after the contact interval', () => {
+    fresh(); tap('next'); hold('use', 3);                      // lesion is far from the tip at the start
+    ok(S().bleeding, 'still bleeding after off-target cautery'); ok(S().stats.cauteryOff > 2); ok(S().burns > 0, 'burn marks');
+    align(); k('use', 'keydown'); tick(w.__duo.CONFIG.cauteryContactSec * 0.5); ok(S().bleeding, 'not yet controlled mid-interval');
+    tick(w.__duo.CONFIG.cauteryContactSec * 0.7); k('use', 'keyup'); ok(!S().bleeding, 'controlled'); ok(S().controlledAt !== null);
+  });
+  test('breaking cautery contact decays progress', () => {
+    fresh(); align(); tap('next'); k('use', 'keydown'); tick(0.8); ok(S().cauteryProg > 0.7); k('use', 'keyup'); tick(1); ok(S().cauteryProg < 0.1, 'progress decayed'); ok(S().bleeding);
+  });
+  test('banding gives the case-specific cue, does not treat, and allows an immediate switch', () => {
+    fresh(); align(); tap('next'); tap('next'); eq(S().tool, 'banding'); k('use', 'keydown'); k('use', 'keyup'); tick(0.05);
+    ok(/flat and fibrotic/.test(doc.getElementById('cue').textContent), 'cue text'); ok(S().bleeding); eq(S().stats.bandAttempts, 1); eq(S().stats.bandOnTarget, 1);
+    tap('prev'); eq(S().tool, 'cautery', 'switch straight away');
+  });
+  test('overshoot then withdraw finds the lesion again', () => {
+    fresh(); k('up', 'keydown'); tick(6); k('up', 'keyup'); tick(1); ok(!S().lesion.vis && S().lesion.d < 0.5, 'lesion passed'); eq(S().stats.overshoots, 1);
+    k('down', 'keydown'); let g = 0; while (S().lesion.d < 2 && g++ < 400) tick(0.05); k('down', 'keyup'); tick(1); align(); ok(dist() <= 9, 'back under the tip');
+  });
+  test('full case with arrows + Space only: find, wash, cautery, wash, reinspect, safe sign-off', () => {
+    fresh(); hold('up', 0.4); align(); hold('use', 1.0); ok(S().stats.washRevealed);
+    tap('next'); hold('use', 2.2); ok(!S().bleeding, 'controlled');
+    tap('prev'); eq(S().tool, 'wash'); hold('use', 1.8); tick(4.5);
+    ok(S().stats.bestClearView >= 3, 'reinspected for >= 3 s'); k('enter', 'keydown'); k('enter', 'keyup');
+    eq(S().state, 'ended'); eq(badge(), 'SAFE SIGN-OFF'); ok(!doc.getElementById('debrief').hidden);
+    ok(!/Banding/.test(doc.getElementById('dbLegend').textContent), 'replay legend only lists tools used');
+  });
+  test('signing off while still bleeding is unsafe', () => {
+    fresh(); tick(2); k('enter', 'keydown'); k('enter', 'keyup'); eq(S().state, 'ended'); eq(badge(), 'UNSAFE SIGN-OFF');
+  });
+  test('signing off after control without a clear re-inspection is not verified', () => {
+    fresh(); align(); tap('next'); hold('use', 2.4); ok(!S().bleeding); k('enter', 'keydown'); k('enter', 'keyup'); eq(badge(), 'SIGN-OFF NOT VERIFIED');
+  });
+  test('uncontrolled bleeding ends in decompensation at the loss limit', () => {
+    fresh(); tick(120); eq(S().state, 'ended'); eq(badge(), 'PATIENT UNSTABLE'); ok(S().loss >= w.__duo.CONFIG.lossLimitMl);
+  });
+  test('banding feedback appears only when banding was attempted; wash-only run adapts', () => {
+    fresh(); align(); hold('use', 1); k('enter', 'keydown'); k('enter', 'keyup');
+    const fb = doc.getElementById('dbFeedback').textContent; ok(/Wash/.test(fb) && !/Banding/.test(fb), 'no banding line'); ok(/never used cautery/.test(fb), 'cautery hint');
+  });
+  test('pause freezes the bleed; resume needs a fresh Space press', () => {
+    fresh(); tick(1); k('p', 'keydown'); k('p', 'keyup'); eq(S().state, 'paused'); const t0 = S().t, l0 = S().loss; tick(2); eq(S().t, t0); eq(S().loss, l0);
+    k('p', 'keydown'); k('p', 'keyup'); eq(S().state, 'play'); eq(S().armed, false);
+  });
+  test('instant retry with R restarts the whole case; Space on the debrief does not', () => {
+    fresh(); tick(1); k('enter', 'keydown'); k('enter', 'keyup'); eq(S().state, 'ended');
+    k('use', 'keydown'); k('use', 'keyup'); eq(S().state, 'ended', 'Space ignored');
+    k('r', 'keydown'); k('r', 'keyup'); const s = S(); eq(s.state, 'play'); eq(s.t, 0); eq(s.z, 0); ok(s.bleeding); eq(s.loss, 0); eq(s.controlledAt, null); eq(s.tool, 'wash'); ok(doc.getElementById('debrief').hidden);
+  });
+
+  const failed = results.filter(r => !r.ok).length;
+  document.getElementById('sum').textContent = failed ? `${failed} of ${results.length} failed` : `All ${results.length} tests passed`;
+  document.getElementById('sum').style.color = failed ? '#ff5d57' : '#5fd38d';
+  document.getElementById('out').innerHTML = results.map(r => `<div class="t ${r.ok ? '' : 'fail'}">${r.ok ? '✓' : '✗'} ${r.name}${r.ok ? '' : `<small>${r.err}</small>`}</div>`).join('');
+});
+</script>
+</body>
+</html>
