@@ -46,11 +46,13 @@ button:focus-visible{outline:2px solid var(--wash);outline-offset:2px}
 .keys{color:var(--muted);font-size:12px;text-align:center}
 kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;font:inherit;font-size:11.5px;color:var(--fg)}
 
-.pad{display:none;grid-template-columns:1fr 1fr 1.25fr;gap:10px;align-items:stretch;margin-top:2px}
-.pad .grp{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.pad .grp.scope{grid-template-columns:1fr}
-.pad button{background:var(--panel2);border:1px solid var(--line);border-radius:12px;min-height:54px;font-size:13px;font-weight:600;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pad{display:none;grid-template-columns:1.55fr 1fr 1fr;gap:10px;align-items:stretch;margin-top:2px}
+.pad .dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;gap:6px}
+.pad .dpad .u{grid-column:2;grid-row:1} .pad .dpad .l{grid-column:1;grid-row:2} .pad .dpad .d{grid-column:2;grid-row:2} .pad .dpad .r{grid-column:3;grid-row:2}
+.pad .grp.tool{display:grid;grid-template-columns:1fr;gap:6px}
+.pad button{background:var(--panel2);border:1px solid var(--line);border-radius:12px;min-height:50px;font-size:15px;font-weight:600;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .pad button.on{background:#2c3e4b;border-color:var(--wash)}
+.pad .grp.tool button{font-size:13px}
 .pad .use{font-size:18px;letter-spacing:.1em;background:#1f3a4a}
 @media (pointer:coarse),(max-width:760px){.pad{display:grid}.keys{display:none}}
 body.forcepad .pad{display:grid}

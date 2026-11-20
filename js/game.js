@@ -15,13 +15,15 @@ const TOOLS = [
    Geometry. The duodenum is a tube of radius ~1 along depth w.
    The camera sits at depth z; a wall point (theta, w) projects to
    radius S*R/(w-z). The instrument tip is fixed on screen, so moving
-   the scope slides the tissue past it.
+   the scope forward/back slides the tissue radially past it, and steering
+   (left/right) shifts the whole picture sideways. Hitting the lesion needs both.
    ===================================================================== */
 const W = 640, CX = 320, CY = 320, RV = 314, S = 230, DELTA = 0.25, WMAX = 16, ZMAX = 8.0, NEAR = 0.2;
 const NA = 36, NB = Math.ceil(WMAX / DELTA), TAU = Math.PI * 2, DEG = Math.PI / 180;
 const LES = CASE.lesion, LES_TH = LES.deg * DEG;
-const TIP_R = 150, TIP_TH = LES.deg * DEG;                    // tip sits on the lesion's sight-line
-const TIP = { x: CX + Math.cos(TIP_TH) * TIP_R, y: CY + Math.sin(TIP_TH) * TIP_R };
+const TIP = { x: 410, y: 420 };                                  // instrument tip: fixed on screen, lower right
+const TIP_TH = Math.atan2(TIP.y - CY, TIP.x - CX);              // direction the instrument enters from
+const STEER_PX = S;                                             // screen px per unit of steering (angulation)
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -34,12 +36,12 @@ const pxOf = w => 0.5 * Math.sin(0.6 * (w - LES.w)) * bend(w);
 const pyOf = w => 0.25 * Math.sin(0.37 * (w - LES.w)) * bend(w);
 const bright = d => clamp(1.3 / (1 + 0.18 * d * d), 0.06, 1);
 
-const cam = { z: 0, px: 0, py: 0 };
-function setCam() { cam.z = z; cam.px = pxOf(z) + 0.012 * Math.sin(clock * 1.3); cam.py = pyOf(z) + 0.01 * Math.sin(clock * 0.93 + 1); }
+const cam = { z: 0, px: 0, py: 0, ox: 0 };
+function setCam() { cam.z = z; cam.ox = -steer * STEER_PX; cam.px = pxOf(z) + 0.012 * Math.sin(clock * 1.3); cam.py = pyOf(z) + 0.01 * Math.sin(clock * 0.93 + 1); }
 const P = { x: 0, y: 0, d: 0 };
 function proj(th, w, R) {
   const d = w - cam.z, k = S / d; if (R === undefined) R = Rof(w);
-  P.x = CX + ((pxOf(w) - cam.px) + R * Math.cos(th)) * k;
+  P.x = CX + cam.ox + ((pxOf(w) - cam.px) + R * Math.cos(th)) * k;
   P.y = CY + ((pyOf(w) - cam.py) + R * Math.sin(th)) * k; P.d = d; return P;
 }
 const COS = [], SIN = [];
@@ -60,11 +62,11 @@ FOLDS.forEach(f => { const k = Math.floor(f.w / DELTA); (FOLD_BY_K.get(k) || FOL
    State
    ===================================================================== */
 let state = 'intro';                    // intro | play | paused | ended
-let t = 0, clock = 0, z = 0, v = 0, toolIdx = 0, loss = 0;
+let t = 0, clock = 0, z = 0, v = 0, steer = 0, vs = 0, toolIdx = 0, loss = 0;
 let bleeding = true, controlledAt = null, cauteryProg = 0, bandCool = 0, offAccum = 0, bloodAcc = 0, sampleAcc = 0;
 let stats, events, samples, burns, seg, fx, overshootActive, clearView, lastCue = {};
-const input = { up: false, down: false, prev: false, next: false, use: false, armed: false };
-const tapHold = { up: 0, down: 0 };       // a very quick tap still moves the scope a little (min. 90 ms of motion)
+const input = { up: false, down: false, left: false, right: false, use: false, armed: false };
+const tapHold = { up: 0, down: 0, left: 0, right: 0 };   // a very quick tap still moves the scope a little (min. 90 ms of motion)
 
 const amt = new Float32Array(NB * NA), fr = new Float32Array(NB * NA);
 const dAmt = new Float32Array(NB * NA), dMass = new Float32Array(NB * NA);
@@ -139,7 +141,6 @@ function washClear(dt) {
   const R = CONFIG.washRadius;
   for (let j = 0; j < NB; j++) {
     const w = (j + 0.5) * DELTA, d = w - cam.z; if (d < 0.3 || d > 4) continue;
-    const rr = S * Rof(w) / d; if (Math.abs(rr - TIP_R) > R + 30) continue;
     for (let a = 0; a < NA; a++) {
       const i = j * NA + a; if (amt[i] <= 0.002) continue;
       const p = proj((a + 0.5) * TAU / NA, w), dist = Math.hypot(p.x - TIP.x, p.y - TIP.y);
@@ -155,7 +156,7 @@ function washClear(dt) {
    ===================================================================== */
 function ev(kind, text) { events.push({ t: +t.toFixed(2), kind, text }); }
 function reset(startNow) {
-  t = 0; z = 0; v = 0; toolIdx = 0; loss = 0; bleeding = true; controlledAt = null; cauteryProg = 0; bandCool = 0; offAccum = 0;
+  t = 0; z = 0; v = 0; steer = 0; vs = 0; toolIdx = 0; loss = 0; bleeding = true; controlledAt = null; cauteryProg = 0; bandCool = 0; offAccum = 0;
   bloodAcc = 0; sampleAcc = 0; stats = freshStats(); events = []; samples = []; burns = []; seg = null; overshootActive = false; clearView = 0; lastCue = {};
   fx = { washing: false, cauteryOn: false, aligned: false, bandFlash: 0, bandOk: false };
   amt.fill(0); fr.fill(0); input.armed = false;
@@ -183,19 +184,21 @@ function changeTool(dir) {
   input.armed = false;                       // holding Space across a switch does nothing until Space is pressed again
   stats.toolSwitches++; ev('tool', TOOLS[toolIdx].name + ' selected'); updateToolUI(); closeSeg();
 }
-const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'prev', ArrowRight: 'next' };
+const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Tab: 'tab' };
 function keyName(e) { return e.code === 'Space' || e.key === ' ' ? 'use' : KEY[e.key] || null; }
 window.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = keyName(e);
+  if (k === 'tab') {                                              // Tab cycles attachments while playing (Shift+Tab goes back); elsewhere it keeps normal focus behaviour
+    if (state !== 'play') return;
+    e.preventDefault(); if (!e.repeat) changeTool(e.shiftKey ? -1 : 1); return;
+  }
   if (k) {
     if (e.target && e.target.type === 'range' && state === 'ended') return;
     e.preventDefault();
     if (state === 'intro') { if (k === 'use' && !e.repeat) { start(); input.use = true; input.armed = false; } return; }
-    if (k === 'up' || k === 'down') { input[k] = true; if (!e.repeat) tapHold[k] = 0.09; }
+    if (k === 'up' || k === 'down' || k === 'left' || k === 'right') { input[k] = true; if (!e.repeat) tapHold[k] = 0.09; }
     else if (e.repeat) return;
-    else if (k === 'prev') changeTool(-1);
-    else if (k === 'next') changeTool(1);
     else if (k === 'use') { if (state === 'play') useDown(); else input.use = true; }
     return;
   }
@@ -206,9 +209,10 @@ window.addEventListener('keydown', e => {
 }, { passive: false });
 window.addEventListener('keyup', e => {
   const k = keyName(e); if (!k) return; e.preventDefault();
-  if (k === 'use') useUp(); else if (k === 'up' || k === 'down') input[k] = false;
+  if (k === 'tab') return;
+  if (k === 'use') useUp(); else if (k === 'up' || k === 'down' || k === 'left' || k === 'right') input[k] = false;
 }, { passive: false });
-window.addEventListener('blur', () => { input.up = input.down = false; useUp(); });
+window.addEventListener('blur', () => { input.up = input.down = input.left = input.right = false; useUp(); });
 if (!/[?&]nopause=1/.test(location.search))                      // auto-pause when the tab is hidden (?nopause=1 disables, for testing)
   document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') togglePause(); });
 
@@ -219,7 +223,7 @@ function bindHold(el, down, up) {
 }
 document.querySelectorAll('.pad button').forEach(b => {
   const a = b.dataset.act;
-  if (a === 'up' || a === 'down') bindHold(b, () => { if (state === 'play') { input[a] = true; tapHold[a] = 0.09; } }, () => { input[a] = false; });
+  if (a === 'up' || a === 'down' || a === 'left' || a === 'right') bindHold(b, () => { if (state === 'play') { input[a] = true; tapHold[a] = 0.09; } }, () => { input[a] = false; });
   else if (a === 'use') bindHold(b, () => { if (state === 'play') useDown(); }, useUp);
   else bindHold(b, () => changeTool(a === 'prev' ? -1 : 1), () => {});
 });
@@ -277,7 +281,11 @@ function lesionScreen() {
   const p = proj(LES_TH, LES.w, Rof(LES.w));
   return { vis: Math.hypot(p.x - CX, p.y - CY) < RV - 12, d, x: p.x, y: p.y };
 }
-function wallPointUnderTip() { let w = z + S / TIP_R; for (let i = 0; i < 3; i++) w = z + S * Rof(w) / TIP_R; return w; }
+function wallPointUnderTip() {                  // where the tip's line of sight meets the wall (solve |lateral| = R at depth d)
+  const u = (TIP.x - CX - cam.ox) / S, vv = (TIP.y - CY) / S, h = Math.hypot(u, vv); let w = z + 1.3;
+  for (let i = 0; i < 4; i++) w = z + Rof(w) / h;
+  return { th: Math.atan2(vv, u), w };
+}
 function closeSeg() {
   if (!seg) return;
   const d = seg.dur;
@@ -303,7 +311,7 @@ function control() {
   showCue('Contact complete. Fresh flow has stopped.', 'good', 3000);
 }
 function addBurn() {
-  burns.push({ th: TIP_TH + (hash(burns.length, 2) - 0.5) * 0.05, w: wallPointUnderTip() }); if (burns.length > 14) burns.shift();
+  const p = wallPointUnderTip(); burns.push({ th: p.th + (hash(burns.length, 2) - 0.5) * 0.05, w: p.w }); if (burns.length > 14) burns.shift();
 }
 
 function update(dt) {
@@ -317,7 +325,15 @@ function update(dt) {
   let nz = z + v * dt;
   if (nz <= 0) { nz = 0; v = 0; if (tgt < 0) cueOnce('lim0', 3, 'Back at the pylorus: you cannot withdraw further.', '', 1800); }
   else if (nz >= ZMAX) { nz = ZMAX; v = 0; if (tgt > 0) cueOnce('limZ', 3, 'End of the practice segment. Withdraw to return to the bulb.', '', 1800); }
-  z = nz; setCam();
+  z = nz;
+  const lOn = input.left || tapHold.left > 0, rOn = input.right || tapHold.right > 0, ds = CONFIG.steerAccel * dt;
+  tapHold.left = Math.max(0, tapHold.left - dt); tapHold.right = Math.max(0, tapHold.right - dt);
+  const tgtS = (rOn ? 1 : 0) - (lOn ? 1 : 0);
+  vs += clamp(tgtS * CONFIG.steerSpeed - vs, -ds, ds);
+  let ns = steer + vs * dt;
+  if (ns <= -CONFIG.steerMax) { ns = -CONFIG.steerMax; vs = 0; if (tgtS < 0) cueOnce('limL', 3, 'Scope fully angled left.', '', 1500); }
+  else if (ns >= CONFIG.steerMax) { ns = CONFIG.steerMax; vs = 0; if (tgtS > 0) cueOnce('limR', 3, 'Scope fully angled right.', '', 1500); }
+  steer = ns; setCam();
 
   const L = lesionScreen(), dist = L.vis ? Math.hypot(L.x - TIP.x, L.y - TIP.y) : Infinity;
   const aimed = dist <= CONFIG.cauteryContactRadius;
@@ -374,7 +390,7 @@ function update(dt) {
 /* =====================================================================
    Rendering
    ===================================================================== */
-function edge(w) { const d = w - cam.z, k = S / d; return { x: CX + (pxOf(w) - cam.px) * k, y: CY + (pyOf(w) - cam.py) * k, k, R: Rof(w), d }; }
+function edge(w) { const d = w - cam.z, k = S / d; return { x: CX + cam.ox + (pxOf(w) - cam.px) * k, y: CY + (pyOf(w) - cam.py) * k, k, R: Rof(w), d }; }
 function patchPath(c, th, w, hth, hw, n, jit, seed) {
   c.beginPath();
   for (let i = 0; i < n; i++) {
@@ -539,7 +555,7 @@ function feedback(grade) {
   const out = [], s = stats, used = Object.keys(s.toolsUsed), f1 = n => n.toFixed(1);
   const li = (tag, txt, cls) => out.push(`<li><span class="tag" style="color:${cls}">${tag}</span> ${txt}</li>`);
   const found = s.tFound === null ? 'You never brought a tool tip onto the lesion.' : `You got the lesion under the tip at ${mmss(s.tFound)}.`;
-  li('Finding the bleed', found + (s.overshoots ? ` You overshot ${s.overshoots}×; short taps of ↑/↓ give finer control near the source.` : ' No overshoots.'), '#e8eef2');
+  li('Finding the bleed', found + (s.overshoots ? ` You overshot ${s.overshoots}×; short taps of ↑/↓ and ←/→ give finer control near the source.` : ' No overshoots.'), '#e8eef2');
   if (s.toolsUsed.wash) {
     li('Wash', `${f1(s.washTime)} s of washing, ${f1(s.washOnSrc)} s directed at the source. ` +
       (s.washRevealed ? 'Fresh blood welling back from the crater showed it was still actively bleeding.' : (s.washOnSrc > 0 ? 'You washed the site but never saw it well up before treating.' : 'The jet never reached the crater, so the source stayed hidden.')) +
@@ -580,7 +596,7 @@ function drawReplay(pos) {
   const cv2 = $('replay'), c = cv2.getContext('2d'), w = cv2.width, h = cv2.height, L = 40, Rr = 10, T = 26, B = 24, tEnd = Math.max(t, 1), pt = pos * tEnd;
   c.clearRect(0, 0, w, h);
   const X = tt => L + (w - L - Rr) * tt / tEnd, Y = zz => T + (h - T - B) * zz / ZMAX;
-  const zT = LES.w - S * 1.0 / TIP_R;
+  const zT = LES.w - S * Math.sin(LES_TH) / (TIP.y - CY);
   c.fillStyle = 'rgba(95,211,141,.14)'; c.fillRect(L, Y(zT - 0.25), w - L - Rr, Y(zT + 0.25) - Y(zT - 0.25));
   c.strokeStyle = '#26323c'; c.lineWidth = 1; c.fillStyle = '#8c9aa5'; c.font = '11px system-ui,sans-serif'; c.textAlign = 'center';
   const step = tEnd > 90 ? 20 : tEnd > 40 ? 10 : 5;
@@ -632,7 +648,7 @@ requestAnimationFrame(frame);
 window.__duo = {
   manual(on) { manual = on; },
   tick(sec) { for (let i = 0; i < Math.round(sec * 60); i++) update(1 / 60); render(); },
-  snapshot: () => ({ state, t, z, v, tool: TOOLS[toolIdx].id, bleeding, controlledAt, loss, cauteryProg, armed: input.armed, use: input.use, cover: coverAtLesion(),
+  snapshot: () => ({ state, t, z, v, steer, tool: TOOLS[toolIdx].id, bleeding, controlledAt, loss, cauteryProg, armed: input.armed, use: input.use, cover: coverAtLesion(),
     stats: JSON.parse(JSON.stringify(stats)), lesion: lesionScreen(), burns: burns.length, clearView, washing: fx.washing, cauteryOn: fx.cauteryOn, totalBlood: totalBlood() }),
   blood: () => Array.from(amt), CONFIG, CASE, reset,
 };

@@ -1,6 +1,6 @@
 # Duodenal Bleed
 
-A training prototype: control a fictional bleeding duodenal-bulb ulcer using only ↑ ↓ ← → and Space.
+A training prototype: control a fictional bleeding duodenal-bulb ulcer with the arrow keys, Tab and Space.
 
 **Play it:** https://brendanjvr-ux.github.io/duodenal-bleed/
 
@@ -16,16 +16,17 @@ Then open http://localhost:8791/ (the game) or http://localhost:8791/tests/tests
 
 | Key | Action |
 |---|---|
-| ↑ / ↓ | Scope forward / back (hold for continuous movement) |
-| ← / → | Previous / next attachment (Wash → Cautery → Banding → Wash), once per keypress |
+| ↑ / ↓ | Move the scope forward / back (hold for continuous movement) |
+| ← / → | Steer the scope left / right (hold for continuous movement) |
+| Tab | Next attachment (Wash → Cautery → Banding → Wash), once per keypress. Shift+Tab goes back |
 | Space | Use the attachment: hold for Wash and Cautery, tap for Banding |
 | P / Enter / R | Pause / sign off / retry from the debrief |
 
-On a phone the same controls appear as an on-screen pad (press-and-hold supported).
+The instrument tip stays put on screen. ↑/↓ slide the tissue toward or away from it and ←/→ swing the view sideways, so putting the ulcer under the tip takes both. On a phone the same controls appear as an on-screen pad (press-and-hold supported).
 
 ## How it plays
 
-The scope starts in the duodenal bulb with a fresh-blood trail ahead. Follow it to the ulcer, wash to confirm the source, switch to cautery and hold contact on the lesion until the bleeding stops, then wash and re-inspect the site before signing off. Banding cannot capture this flat, fibrotic ulcer, so it only produces a cue. Blood loss runs in real time; at 1500 mL the patient decompensates.
+The scope starts in the duodenal bulb with a fresh-blood trail ahead. Steer and advance to the ulcer, wash to confirm the source, switch to cautery and hold contact on the lesion until the bleeding stops, then wash and re-inspect the site before signing off. Banding cannot capture this flat, fibrotic ulcer, so it only produces a cue. Blood loss runs in real time; at 1500 mL the patient decompensates.
 
 ## Files
 

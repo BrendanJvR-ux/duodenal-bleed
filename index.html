@@ -24,7 +24,7 @@
     <div class="cover" id="intro">
       <div class="box">
         <h2>Duodenal bulb · active bleed</h2>
-        <p>There is fresh blood ahead. Follow it to its source and control it, then decide when the site is clear and stable enough to sign off.</p>
+        <p>There is fresh blood ahead. Steer to follow it to its source and control it, then decide when the site is clear and stable enough to sign off.</p>
         <button class="btn primary" id="startBtn">Start (Space)</button>
       </div>
     </div>
@@ -46,14 +46,16 @@
     <button class="btn" id="pauseBtn">Pause (P)</button>
     <button class="btn danger" id="signBtn">Sign off site (Enter)</button>
   </div>
-  <div class="keys"><kbd>↑</kbd> forward · <kbd>↓</kbd> back · <kbd>←</kbd><kbd>→</kbd> attachment · <kbd>Space</kbd> use</div>
+  <div class="keys"><kbd>↑</kbd><kbd>↓</kbd> forward / back · <kbd>←</kbd><kbd>→</kbd> steer · <kbd>Tab</kbd> attachment · <kbd>Space</kbd> use</div>
 
   <div class="pad" id="pad">
-    <div class="grp scope">
-      <button data-act="up">▲ Forward</button>
-      <button data-act="down">▼ Back</button>
+    <div class="dpad">
+      <button class="u" data-act="up" aria-label="Forward">▲</button>
+      <button class="l" data-act="left" aria-label="Steer left">◀</button>
+      <button class="d" data-act="down" aria-label="Back">▼</button>
+      <button class="r" data-act="right" aria-label="Steer right">▶</button>
     </div>
-    <div class="grp">
+    <div class="grp tool">
       <button data-act="prev">◀ Tool</button>
       <button data-act="next">Tool ▶</button>
     </div>
