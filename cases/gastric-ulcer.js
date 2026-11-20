@@ -4,8 +4,8 @@ window.CASES.push({
   id: 'gastric', short: 'Stomach', title: 'Gastric ulcer bleed',
   where: 'Lesser curve of the stomach, just before the incisura angularis',
   vignette: 'Fictional patient on regular anti-inflammatories with black stools and dizziness. The scope is in the gastric body and a pool of blood has collected in the dependent fundus.',
-  start: { z: 9.4 },
-  lesion: { kind: 'ulcer', style: 'gastric', deg: 28, w: 14.0, radius: 0.28 },
+  start: { z: 9.4, tip: 60 },
+  lesion: { kind: 'ulcer', style: 'gastric', deg: 285, w: 14.0, radius: 0.28 },
   flowDir: -1,                // blood runs back along the lesser curve and pools in the dependent fundus
   bleedMl: 14, emit: 0.8,
   intended: 'cautery', sourceName: 'ulcer',

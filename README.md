@@ -17,12 +17,12 @@ Then open http://localhost:8791/ (the game) or http://localhost:8791/tests/tests
 | Key | Action |
 |---|---|
 | ↑ / ↓ | Move the scope forward / back (hold for continuous movement) |
-| ← / → | Steer the scope left / right (hold for continuous movement) |
+| ← / → | Rotate the instrument tip round the wall (clockwise / anticlockwise, like a clock hand). It can slide all the way round, including the top. Hold for continuous movement |
 | Tab | Next attachment (Wash → Cautery → Banding → Wash), once per keypress. Shift+Tab goes back |
 | Space | Use the attachment: hold for Wash and Cautery, tap for Banding |
 | P / Enter / R | Pause / sign off / retry from the debrief |
 
-The instrument tip stays put on screen. ↑/↓ slide the tissue toward or away from it and ←/→ swing the view sideways, so putting the ulcer under the tip takes both. On a phone the same controls appear as an on-screen pad (press-and-hold supported).
+The camera stays steady. ↑/↓ slide the tissue toward or away from the tip, and ←/→ rotate the tip round the wall, so putting a lesion under the tip takes both. The tip rides a fixed circle on screen, so it follows each region's wall (shallow in the narrow oesophagus, deeper in the wide stomach). When you turn the tip it twists first and the shaft follows a moment later. On a phone the same controls appear as an on-screen pad (press-and-hold supported).
 
 ## The cases
 
@@ -56,4 +56,4 @@ Steer and advance to the lesion by following the blood, wash to confirm the sour
 
 ## Adding a case
 
-Copy a file in `cases/`, change the start, lesion (`kind`: `varix` or `ulcer`, position, radius), `suitable` flags, `flowDir` and the cue/feedback text, and add a `<script>` tag for it in `index.html` and `tests/tests.html`. Choose the lesion angle so it can be reached by steering within about ±0.7 (angles between roughly 25° and 115° work well).
+Copy a file in `cases/`, change the start, lesion (`kind`: `varix` or `ulcer`, position, radius), `suitable` flags, `flowDir` and the cue/feedback text, and add a `<script>` tag for it in `index.html` and `tests/tests.html`. `deg` can be anywhere round the wall (0 = 3 o'clock, 90 = bottom, 270 = top); `start.tip` sets where the tip begins.

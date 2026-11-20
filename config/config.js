@@ -2,9 +2,9 @@
 window.CONFIG = {
   scopeSpeed: 0.62,          // world units / second while ↑ or ↓ is held
   scopeAccel: 3.2,           // easing so taps move a small, controllable amount
-  steerSpeed: 0.55,          // steering (←/→) in units / second; 1 unit = 230 px of sideways shift
-  steerAccel: 4.0,
-  steerMax: 0.75,            // how far the scope can angle either way
+  tipSpeed: 1.5,             // how fast ←/→ rotate the tip round the wall (radians / second)
+  tipAccel: 9.0,
+  probeLag: 0.35,            // seconds for the shaft to catch up with the twisting tip
   cauteryContactSec: 1.6,    // continuous contact needed to coagulate (the "contact interval")
   cauteryContactRadius: 26,  // px: probe tip must be this close to the lesion centre
   cauteryDecay: 1.5,         // progress lost per second when contact is broken

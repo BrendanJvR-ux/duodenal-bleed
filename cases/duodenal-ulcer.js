@@ -4,8 +4,8 @@ window.CASES.push({
   id: 'duodenal', short: 'Duodenum', title: 'Duodenal bulb ulcer bleed',
   where: 'Posterior wall of the duodenal bulb (D1)',
   vignette: 'Fictional patient with epigastric pain and melaena. The scope has just passed the pylorus into the duodenal bulb, and fresh blood is pooling ahead.',
-  start: { z: 18.75 },
-  lesion: { kind: 'ulcer', style: 'duodenal', deg: 35, w: 21.2, radius: 0.2 },
+  start: { z: 18.75, tip: 60 },
+  lesion: { kind: 'ulcer', style: 'duodenal', deg: 150, w: 21.2, radius: 0.2 },
   flowDir: -1,                // blood pools in the bulb and refluxes back toward the pylorus
   bleedMl: 16, emit: 0.95,
   intended: 'cautery', sourceName: 'ulcer',

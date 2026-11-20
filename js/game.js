@@ -16,15 +16,19 @@ const TOOLS = [
    junction, stomach, pylorus, then the first part of the duodenum (D1); see
    config/anatomy.js. A wall point (theta, w) projects to radius S*R/(w-z) from
    the picture centre. The instrument tip is fixed on screen, so advancing or
-   withdrawing slides tissue radially past it and steering shifts the whole
-   picture sideways: reaching a lesion needs both.
+   withdrawing slides tissue radially past it, and steering (left/right) rotates
+   the tip round the wall like a clock hand while the camera stays steady:
+   reaching a lesion needs both. The tip rides a fixed-radius circle on screen,
+   so it touches the wall of every region (narrow oesophagus, wide stomach) at
+   the depth where that wall projects onto the circle.
    ===================================================================== */
 const W = 640, CX = 320, CY = 320, RV = 314, S = 230, DELTA = 0.25, NEAR = 0.2;
 const WMAX = AN.end, ZMAX = AN.scopeMax;
 const NA = 36, NB = Math.ceil(WMAX / DELTA), TAU = Math.PI * 2, DEG = Math.PI / 180;
-const TIP = { x: 410, y: 420 };                                  // instrument tip: fixed on screen, lower right
-const TIP_TH = Math.atan2(TIP.y - CY, TIP.x - CX);              // direction the instrument enters from
-const STEER_PX = S;                                             // screen px per unit of steering (angulation)
+const TIP_R = 135, TIP = { x: 0, y: 0 };                   // instrument tip: rides a circle round the picture centre
+let tipAng = 60 * DEG, tipVel = 0, probeAng = 60 * DEG;       // tip clock angle; the shaft follows with a lag
+const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
+function setTip() { TIP.x = CX + Math.cos(tipAng) * TIP_R; TIP.y = CY + Math.sin(tipAng) * TIP_R; }
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -61,7 +65,7 @@ function texture(a, w) {                                         // longitudinal
 }
 
 const cam = { z: 0, px: 0, py: 0, ox: 0 };
-function setCam() { cam.z = z; cam.ox = -steer * STEER_PX; cam.px = pxOf(z) + 0.012 * Math.sin(clock * 1.3); cam.py = pyOf(z) + 0.01 * Math.sin(clock * 0.93 + 1); }
+function setCam() { cam.z = z; cam.ox = 0; cam.px = pxOf(z) + 0.012 * Math.sin(clock * 1.3); cam.py = pyOf(z) + 0.01 * Math.sin(clock * 0.93 + 1); }
 const P = { x: 0, y: 0, d: 0 };
 function proj(th, w, R) {
   const d = w - cam.z, k = S / d; if (R === undefined) R = Rat(th, w);
@@ -78,7 +82,7 @@ AN.folds.forEach(f => { const k = Math.floor(f.w / DELTA); (FOLD_BY_K.get(k) || 
    ===================================================================== */
 let state = 'intro';                    // intro | play | paused | ended
 let CASE, LES, LES_TH, SRC_J = 0, SRC_A = 0, caseIdx = 0, bandsLeft = 0, landmarkSeen = new Set(), controlledBy = null;
-let t = 0, clock = 0, z = 0, v = 0, steer = 0, vs = 0, toolIdx = 0, loss = 0;
+let t = 0, clock = 0, z = 0, v = 0, toolIdx = 0, loss = 0;
 let bleeding = true, controlledAt = null, cauteryProg = 0, bandCool = 0, offAccum = 0, bloodAcc = 0, sampleAcc = 0;
 let stats, events, samples, burns, seg, fx, overshootActive, clearView, lastCue = {};
 const input = { up: false, down: false, left: false, right: false, use: false, armed: false };
@@ -187,7 +191,7 @@ function buildPills() {
   $('casePills').innerHTML = html; $('dbPills').innerHTML = html;
 }
 function reset(startNow) {
-  t = 0; z = CASE.start.z; v = 0; steer = 0; vs = 0; toolIdx = 0; loss = 0; bleeding = true; controlledAt = null; controlledBy = null; cauteryProg = 0; bandCool = 0; offAccum = 0;
+  t = 0; z = CASE.start.z; v = 0; tipAng = (CASE.start.tip ?? 60) * DEG; tipVel = 0; probeAng = tipAng; setTip(); toolIdx = 0; loss = 0; bleeding = true; controlledAt = null; controlledBy = null; cauteryProg = 0; bandCool = 0; offAccum = 0;
   bandsLeft = CONFIG.bandsLoaded; landmarkSeen = new Set();
   bloodAcc = 0; sampleAcc = 0; stats = freshStats(); events = []; samples = []; burns = []; seg = null; overshootActive = false; clearView = 0; lastCue = {};
   fx = { washing: false, cauteryOn: false, aligned: false, bandFlash: 0, bandOk: false };
@@ -376,14 +380,13 @@ function update(dt) {
   if (nz <= 0) { nz = 0; v = 0; if (tgt < 0) cueOnce('lim0', 3, 'Upper oesophagus (20 cm): this simulation goes no higher.', '', 1800); }
   else if (nz >= ZMAX) { nz = ZMAX; v = 0; if (tgt > 0) cueOnce('limZ', 3, 'End of D1 (superior duodenal flexure). The scope cannot go beyond the first part of the duodenum.', '', 2600); }
   z = nz;
-  const lOn = input.left || tapHold.left > 0, rOn = input.right || tapHold.right > 0, ds = CONFIG.steerAccel * dt;
+  const lOn = input.left || tapHold.left > 0, rOn = input.right || tapHold.right > 0, da = CONFIG.tipAccel * dt;
   tapHold.left = Math.max(0, tapHold.left - dt); tapHold.right = Math.max(0, tapHold.right - dt);
-  const tgtS = (rOn ? 1 : 0) - (lOn ? 1 : 0);
-  vs += clamp(tgtS * CONFIG.steerSpeed - vs, -ds, ds);
-  let ns = steer + vs * dt;
-  if (ns <= -CONFIG.steerMax) { ns = -CONFIG.steerMax; vs = 0; if (tgtS < 0) cueOnce('limL', 3, 'Scope fully angled left.', '', 1500); }
-  else if (ns >= CONFIG.steerMax) { ns = CONFIG.steerMax; vs = 0; if (tgtS > 0) cueOnce('limR', 3, 'Scope fully angled right.', '', 1500); }
-  steer = ns; setCam();
+  const tgtS = (rOn ? 1 : 0) - (lOn ? 1 : 0);                    // → turns the tip clockwise round the wall, ← anticlockwise
+  tipVel += clamp(tgtS * CONFIG.tipSpeed - tipVel, -da, da);
+  tipAng = (tipAng + tipVel * dt + TAU) % TAU;
+  probeAng += angDiff(tipAng, probeAng) * (1 - Math.exp(-dt / CONFIG.probeLag));   // the tip twists first; the whole probe follows
+  setTip(); setCam();
   for (const lm of AN.landmarks) if (!landmarkSeen.has(lm.name) && Math.abs(z - lm.w) < 0.3) {
     landmarkSeen.add(lm.name); ev('landmark', lm.name); cueOnce('lm', 1.5, `${lm.name} · ${cmAt(lm.w)} cm`, '', 1700);
   }
@@ -592,11 +595,12 @@ function render() {
   c.fillStyle = '#000'; c.beginPath(); c.rect(0, 0, W, W); c.arc(CX, CY, RV, 0, TAU, true); c.fill('evenodd');
   c.textAlign = 'center'; c.fillStyle = 'rgba(225,235,242,.9)'; c.font = '600 12px system-ui,sans-serif'; c.fillText(regionAt(z).name.toUpperCase(), CX, 44);
   c.fillStyle = 'rgba(170,190,205,.8)'; c.font = '11px system-ui,sans-serif'; c.fillText(cmAt(z) + ' cm from incisors', CX, 59);
+  c.fillText('tip at ' + (Math.round(((tipAng / DEG + 90) % 360) / 30) % 12 || 12) + ' o\'clock', CX, 73);
 }
 function drawInstrument(c) {
   const tool = TOOLS[toolIdx], col = tool.color, rad = tool.radius();
-  const ex = CX + Math.cos(TIP_TH + 0.16) * 440, ey = CY + Math.sin(TIP_TH + 0.16) * 440;
-  const mx = (ex + TIP.x) / 2 + 14, my = (ey + TIP.y) / 2 - 8;
+  const lead = angDiff(tipAng, probeAng), ex = CX + Math.cos(probeAng) * 440, ey = CY + Math.sin(probeAng) * 440;
+  const mx = (ex + TIP.x) / 2 - Math.sin(probeAng) * lead * 150, my = (ey + TIP.y) / 2 + Math.cos(probeAng) * lead * 150;   // shaft bows while the tip leads
   c.lineCap = 'round';
   const shaft = (w, s) => { c.strokeStyle = s; c.lineWidth = w; c.beginPath(); c.moveTo(ex, ey); c.quadraticCurveTo(mx, my, TIP.x, TIP.y); c.stroke(); };
   if (tool.id === 'wash') { shaft(15, '#5b7080'); shaft(11, '#a9c0cf'); shaft(4, 'rgba(190,230,250,.8)'); }
@@ -714,7 +718,7 @@ function showDebrief(grade, reason) {
 function drawReplay(pos) {
   const cv2 = $('replay'), c = cv2.getContext('2d'), w = cv2.width, h = cv2.height, L = 40, Rr = 10, T = 26, B = 24, tEnd = Math.max(t, 1), pt = pos * tEnd;
   c.clearRect(0, 0, w, h);
-  const zT = LES.w - S * Rof(LES.w) * Math.sin(LES_TH) / (TIP.y - CY);
+  const zT = LES.w - S * Rof(LES.w) / TIP_R;
   const zs = samples.map(q => q.z).concat([CASE.start.z, zT]), zLo = Math.max(0, Math.min(...zs) - 0.6), zHi = Math.min(ZMAX, Math.max(...zs) + 0.6);
   const X = tt => L + (w - L - Rr) * tt / tEnd, Y = zz => T + (h - T - B) * (zz - zLo) / (zHi - zLo);
   c.fillStyle = 'rgba(95,211,141,.14)'; c.fillRect(L, Y(zT - 0.25), w - L - Rr, Y(zT + 0.25) - Y(zT - 0.25));
@@ -771,7 +775,7 @@ requestAnimationFrame(frame);
 window.__duo = {
   manual(on) { manual = on; },
   tick(sec) { for (let i = 0; i < Math.round(sec * 60); i++) update(1 / 60); render(); },
-  snapshot: () => ({ state, t, z, v, steer, tool: TOOLS[toolIdx].id, bleeding, controlledAt, loss, cauteryProg, armed: input.armed, use: input.use, cover: coverAtLesion(), caseIdx, region: regionAt(z).id, cm: cmAt(z), bands: bandsLeft, controlledBy, zMax: ZMAX,
+  snapshot: () => ({ state, t, z, v, tipAng, tip: { x: TIP.x, y: TIP.y }, probeAng, steer: tipAng, tool: TOOLS[toolIdx].id, bleeding, controlledAt, loss, cauteryProg, armed: input.armed, use: input.use, cover: coverAtLesion(), caseIdx, region: regionAt(z).id, cm: cmAt(z), bands: bandsLeft, controlledBy, zMax: ZMAX,
     stats: JSON.parse(JSON.stringify(stats)), lesion: lesionScreen(), burns: burns.length, clearView, washing: fx.washing, cauteryOn: fx.cauteryOn, totalBlood: totalBlood() }),
   blood: () => Array.from(amt), CONFIG, ANATOMY: AN, get CASE() { return CASE; }, reset, loadCase,
 };

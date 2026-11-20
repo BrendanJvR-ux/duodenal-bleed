@@ -4,11 +4,11 @@ window.CASES.push({
   id: 'varices', short: 'Oesophagus', title: 'Oesophageal variceal bleed',
   where: 'Distal oesophagus, about 4 cm above the gastro-oesophageal junction',
   vignette: 'Fictional patient with cirrhosis and portal hypertension, vomiting fresh blood. Varices run down the distal oesophagus and one has ruptured. A band-ligation cap is loaded on the scope.',
-  start: { z: 1.6 },
-  lesion: { kind: 'varix', deg: 115, w: 5.9, radius: 0.13 },        // deg: position round the wall (0 = 3 o'clock, 90 = bottom)
+  start: { z: 1.6, tip: 60 },
+  lesion: { kind: 'varix', deg: 200, w: 5.9, radius: 0.13 },        // deg: position round the wall (0 = 3 o'clock, 90 = bottom)
   varices: {                                                       // longitudinal blue cords; `bleed` is the cord that has ruptured
-    w0: 4.3, w1: 7.0, bleed: 1,
-    cords: [{ deg: 30, ph: 0.5 }, { deg: 115, ph: 2.0 }, { deg: 165, ph: 4.1 }, { deg: 230, ph: 1.3 }, { deg: 290, ph: 3.3 }, { deg: 350, ph: 5.2 }],
+    w0: 4.3, w1: 7.0, bleed: 3,
+    cords: [{ deg: 20, ph: 0.5 }, { deg: 80, ph: 2.0 }, { deg: 140, ph: 4.1 }, { deg: 200, ph: 1.3 }, { deg: 260, ph: 3.3 }, { deg: 320, ph: 5.2 }],
   },
   flowDir: 1,                 // blood runs down the oesophagus toward the stomach
   bleedMl: 22, emit: 1.3,     // brisk
