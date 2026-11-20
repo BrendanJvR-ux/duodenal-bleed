@@ -30,7 +30,7 @@ public static class UIKit
             t.SetPixel(x, y, new Color(1, 1, 1, Mathf.Clamp01(r - d + 0.5f)));
         }
         t.Apply();
-        return Sprite.Create(t, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 1, 0, SpriteMeshType.FullRect, new Vector4(r + 1, r + 1, r + 1, r + 1));
+        return Sprite.Create(t, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100, 0, SpriteMeshType.FullRect, new Vector4(r + 1, r + 1, r + 1, r + 1));
     }
 
     public static Canvas CreateCanvas(string name, int order = 0)

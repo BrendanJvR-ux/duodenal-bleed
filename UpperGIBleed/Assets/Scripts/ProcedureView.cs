@@ -17,6 +17,9 @@ public class ProcedureView : MonoBehaviour
         var go = new GameObject("ProcedureView"); var v = go.AddComponent<ProcedureView>(); v.p = p; v.cam = cam; v.Build(); return v;
     }
 
+    /// <summary>The scope light sits close to the wall in a narrow lumen, so scale it by the local radius (inverse square) to keep the exposure even.</summary>
+    public static float ScopeLightIntensity(float z) { float r = Anatomy.Radius(z) / 1.75f; return 3.0f * Mathf.Clamp(r * r, 0.1f, 1f); }
+
     static Material Lit(Color c, float smooth = 0.5f, float metal = 0, Color? emission = null)
     {
         var m = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -89,7 +92,7 @@ public class ProcedureView : MonoBehaviour
                 p.tract.WallPoint(th, wm, out var pos, out var n);
                 var cord = Prop("Varix", matVarix); cord.transform.position = pos + n * 0.01f;
                 cord.transform.rotation = Quaternion.LookRotation(n, Vector3.forward);     // +Z into the lumen, +Y along the tube
-                cord.transform.localScale = new Vector3(0.11f, len / 6f, 0.11f);
+                cord.transform.localScale = new Vector3(0.05f, len / 6f, 0.05f);
                 cords.Add(cord);
             }
         }
@@ -170,7 +173,7 @@ public class ProcedureView : MonoBehaviour
             wellGo.transform.localScale = new Vector3(r * 2, r * 2, r * 1.2f);
             wellMat.SetColor("_EmissionColor", new Color(0.9f + 0.9f * pulse, 0.05f, 0.05f));
         }
-        scopeLight.intensity = 3.2f + 0.08f * Mathf.Sin(Time.time * 17);
+        scopeLight.intensity = ScopeLightIntensity(p.z) * (1 + 0.025f * Mathf.Sin(Time.time * 17));
         if (Time.frameCount % 2 == 0) p.blood.UploadTexture();
     }
 

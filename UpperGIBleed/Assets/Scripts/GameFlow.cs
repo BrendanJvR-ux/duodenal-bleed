@@ -30,7 +30,7 @@ public class GameFlow : MonoBehaviour
     {
         // the menu looks down the gastric body with a slow drift
         cam.transform.position = Anatomy.Axis(9.0f); cam.transform.rotation = Quaternion.LookRotation(Anatomy.Tangent(9.0f), Vector3.up);
-        if (!menuLight) { menuLight = new GameObject("MenuLight").AddComponent<Light>(); menuLight.type = LightType.Point; menuLight.range = 7; menuLight.intensity = 2.4f; menuLight.color = new Color(1f, 0.95f, 0.88f); menuLight.transform.SetParent(cam.transform, false); }
+        if (!menuLight) { menuLight = new GameObject("MenuLight").AddComponent<Light>(); menuLight.type = LightType.Point; menuLight.range = 7; menuLight.intensity = ProcedureView.ScopeLightIntensity(9f) * 0.8f; menuLight.color = new Color(1f, 0.95f, 0.88f); menuLight.transform.SetParent(cam.transform, false); }
         menuLight.gameObject.SetActive(true);
     }
     Light menuLight; float drift;

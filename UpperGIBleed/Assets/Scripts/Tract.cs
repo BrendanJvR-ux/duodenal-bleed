@@ -94,6 +94,8 @@ public class Tract : MonoBehaviour
         MakeTransparent(overlayMat);
         overlayMat.SetColor("_BaseColor", Color.white);
         overlayMat.SetFloat("_Smoothness", 0.9f);
+        var clear = new Texture2D(1, 1, TextureFormat.RGBA32, false); clear.SetPixel(0, 0, Color.clear); clear.Apply();
+        overlayMat.SetTexture("_BaseMap", clear);                      // nothing to show until a case sets the blood texture
         ovr.sharedMaterial = overlayMat;
         ovr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; ovr.receiveShadows = false;
     }
