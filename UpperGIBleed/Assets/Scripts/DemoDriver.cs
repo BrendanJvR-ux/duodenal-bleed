@@ -78,7 +78,7 @@ public class DemoDriver : MonoBehaviour
     {
         int w = 1280, h = 720;
         var rt = new RenderTexture(w, h, 24); var prev = cam.targetTexture;
-        foreach (var c in FindObjectsByType<Canvas>(FindObjectsSortMode.None)) { c.renderMode = RenderMode.ScreenSpaceCamera; c.worldCamera = cam; c.planeDistance = 0.5f; }
+        foreach (var c in FindObjectsByType<Canvas>(FindObjectsSortMode.None)) { c.renderMode = RenderMode.ScreenSpaceCamera; c.worldCamera = cam; c.planeDistance = cam.nearClipPlane + 0.005f; }
         cam.targetTexture = rt; cam.aspect = (float)w / h; cam.Render();
         var old = RenderTexture.active; RenderTexture.active = rt;
         var tex = new Texture2D(w, h, TextureFormat.RGB24, false); tex.ReadPixels(new Rect(0, 0, w, h), 0, 0); tex.Apply();

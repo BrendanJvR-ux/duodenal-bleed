@@ -18,7 +18,7 @@ public class ProcedureView : MonoBehaviour
     }
 
     /// <summary>The scope light sits close to the wall in a narrow lumen, so scale it by the local radius (inverse square) to keep the exposure even.</summary>
-    public static float ScopeLightIntensity(float z) { float r = Anatomy.Radius(z) / 1.75f; return 3.0f * Mathf.Clamp(r * r, 0.1f, 1f); }
+    public static float ScopeLightIntensity(float z) { float r = Anatomy.Radius(z) / 1.75f; return 2.5f * Mathf.Clamp(r * r, 0.08f, 1f); }
 
     static Material Lit(Color c, float smooth = 0.5f, float metal = 0, Color? emission = null)
     {
@@ -151,6 +151,9 @@ public class ProcedureView : MonoBehaviour
         float d = p.tipOnWall ? Mathf.Min(p.tipDist, 2.5f) - 0.05f : 1.5f;
         var tip = ray.origin + ray.direction * Mathf.Max(0.12f, d);
         toolRoot.transform.position = tip; toolRoot.transform.rotation = Quaternion.LookRotation(ray.direction, cam.transform.up);
+        // the tool bodies run 2.6 units back from the tip: shorten them so they never reach the camera in a narrow lumen
+        float bodyScale = Mathf.Clamp((Mathf.Max(0.12f, d) - 0.14f) / 2.6f, 0.05f, 0.5f);
+        foreach (var g in new[] { washGo, cauteryGo }) g.transform.localScale = new Vector3(0.5f, 0.5f, bodyScale);
         var anchorVp = p.TipViewport(p.probeAng); anchorVp = (anchorVp - new Vector2(0.5f, 0.5f)) * 1.35f + new Vector2(0.5f, 0.5f);
         var anchor = cam.ViewportToWorldPoint(new Vector3(anchorVp.x, anchorVp.y, 0.08f));
         var toTip = tip - anchor; shaft.transform.position = tip; shaft.transform.rotation = Quaternion.LookRotation(toTip.normalized, cam.transform.up);

@@ -182,14 +182,10 @@ public class HUD : MonoBehaviour
         if (r.Fail) GameAudio.I?.Bad(); else GameAudio.I?.Token();
         debrief = new GameObject("Debrief", typeof(RectTransform)); debrief.transform.SetParent(canvas.transform, false); UIKit.Fill(debrief);
         UIKit.PanelEl(debrief.transform, "Dim", new Color(0.02f, 0.03f, 0.04f, 0.9f), false);
-        var scroll = new GameObject("Scroll", typeof(RectTransform), typeof(ScrollRect), typeof(RectMask2D)); scroll.transform.SetParent(debrief.transform, false);
-        UIKit.Rect(scroll, new Vector2(0.5f, 0), new Vector2(0.5f, 1), new Vector2(-340, 14), new Vector2(340, -14));
-        var card = UIKit.PanelEl(scroll.transform, "Card", UIKit.Panel); UIKit.Outline(card, UIKit.Line);
-        var crt = card.rectTransform; crt.anchorMin = new Vector2(0, 1); crt.anchorMax = new Vector2(1, 1); crt.pivot = new Vector2(0.5f, 1); crt.offsetMin = new Vector2(0, 0); crt.offsetMax = new Vector2(0, 0);
-        var fitter = card.gameObject.AddComponent<ContentSizeFitter>(); fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        var sr = scroll.GetComponent<ScrollRect>(); sr.content = crt; sr.horizontal = false; sr.scrollSensitivity = 30;
-        // the layout group lives on the card itself so the size fitter can measure it
-        var vl = card.gameObject.AddComponent<VerticalLayoutGroup>(); vl.spacing = 8; vl.padding = new RectOffset(22, 22, 18, 18); vl.childAlignment = TextAnchor.UpperCenter;
+        var card = UIKit.PanelEl(debrief.transform, "Card", UIKit.Panel); UIKit.Outline(card, UIKit.Line);
+        UIKit.Rect(card.gameObject, new Vector2(0.5f, 0), new Vector2(0.5f, 1), new Vector2(-350, 12), new Vector2(350, -12));
+        card.gameObject.AddComponent<RectMask2D>();
+        var vl = card.gameObject.AddComponent<VerticalLayoutGroup>(); vl.spacing = 7; vl.padding = new RectOffset(22, 22, 16, 16); vl.childAlignment = TextAnchor.UpperCenter;
         vl.childControlWidth = true; vl.childControlHeight = true; vl.childForceExpandWidth = true; vl.childForceExpandHeight = false;
         var v = vl;
         var badge = UIKit.PanelEl(v.transform, "Badge", UIKit.A(o.Item4, 0.18f)); UIKit.Size(badge.gameObject, -1, 26); UIKit.Label(badge.transform, o.Item1, 12, o.Item4, TextAlignmentOptions.Center, true);
