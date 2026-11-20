@@ -84,7 +84,7 @@ public static class UIKit
             else legacy.alignment = a == TextAlignmentOptions.Center ? TextAnchor.MiddleCenter : a == TextAlignmentOptions.Left ? TextAnchor.MiddleLeft : a == TextAlignmentOptions.Right ? TextAnchor.MiddleRight : a == TextAlignmentOptions.TopLeft ? TextAnchor.UpperLeft : a == TextAlignmentOptions.Top ? TextAnchor.UpperCenter : TextAnchor.MiddleCenter;
         }
         public void Bold(bool b) { if (tmp) tmp.fontStyle = b ? FontStyles.Bold : FontStyles.Normal; else legacy.fontStyle = b ? FontStyle.Bold : FontStyle.Normal; }
-        public void Wrap(bool w) { if (tmp) tmp.enableWordWrapping = w; else legacy.horizontalOverflow = w ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow; }
+        public void Wrap(bool w) { if (tmp) tmp.textWrappingMode = w ? TextWrappingModes.Normal : TextWrappingModes.NoWrap; else legacy.horizontalOverflow = w ? HorizontalWrapMode.Wrap : HorizontalWrapMode.Overflow; }
         public void Raycast(bool r) { if (tmp) tmp.raycastTarget = r; else legacy.raycastTarget = r; }
     }
 
@@ -93,7 +93,7 @@ public static class UIKit
         var go = new GameObject("Label", typeof(RectTransform)); go.transform.SetParent(parent, false);
         var t = new Txt { go = go };
         if (TmpAvailable) { t.tmp = go.AddComponent<TextMeshProUGUI>(); t.tmp.richText = true; }
-        else { t.legacy = go.AddComponent<Text>(); t.legacy.font = LegacyFont; t.legacy.supportRichText = true; t.legacy.verticalOverflow = VerticalOverflowMode.Overflow; }
+        else { t.legacy = go.AddComponent<Text>(); t.legacy.font = LegacyFont; t.legacy.supportRichText = true; t.legacy.verticalOverflow = VerticalWrapMode.Overflow; }
         t.text = text; t.size = size; t.color = color; t.Align(align); t.Bold(bold); t.Wrap(true); t.Raycast(false);
         Fill(go); return t;
     }

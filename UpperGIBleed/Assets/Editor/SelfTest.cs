@@ -49,7 +49,7 @@ public static class SelfTest
             p.input.up = true; Tick(p, 40); p.input.up = false;
             Check(Mathf.Abs(p.z - Anatomy.ScopeMax) < 0.01f, c.id + ": the scope stops at the end of D1");
             Check(Anatomy.RegionAt(p.z).id == "d1", c.id + ": still in D1 at the limit");
-            p.Reset(); p.Start_();
+            p.ResetCase(); p.Start_();
             // aim with the arrows only
             int taps = Align(p, 240);
             Check(p.lesionDist <= GameConfig.CauteryTol + c.lesionRadius * 0.5f, $"{c.id}: aimed at the lesion with arrows (dist {p.lesionDist:F2} after {taps} taps, z {p.z:F2} tip {p.tipAng * Mathf.Rad2Deg:F0}°)");
@@ -84,17 +84,18 @@ public static class SelfTest
             else Check(fb.Exists(x => x.tag == "Cautery" && x.text.Contains("Flow stopped")), c.id + ": cautery feedback");
 
             // fail paths
-            p.Reset(); p.Start_(); Tick(p, 1); p.SignOff(); Check(p.grade == Grade.Unsafe && p.result.Value.tokens == 0 && p.result.Value.score == 0, c.id + ": unsafe sign-off = fail, 0 tokens");
-            p.Reset(); p.Start_(); Tick(p, 200); Check(p.state == Procedure.State.Ended && p.grade == Grade.Haemorrhage && p.result.Value.tokens == 0, c.id + ": uncontrolled bleed ends in decompensation with 0 tokens");
+            p.ResetCase(); p.Start_(); Tick(p, 1); p.SignOff(); Check(p.grade == Grade.Unsafe && p.result.Value.tokens == 0 && p.result.Value.score == 0, c.id + ": unsafe sign-off = fail, 0 tokens");
+            p.ResetCase(); p.Start_(); Tick(p, 200); Check(p.state == Procedure.State.Ended && p.grade == Grade.Haemorrhage && p.result.Value.tokens == 0, c.id + ": uncontrolled bleed ends in decompensation with 0 tokens");
             // switching tools while Space is held stops the action and needs a fresh press
-            p.Reset(); p.Start_(); p.UseDown(); Tick(p, 0.3f); Check(p.washing, c.id + ": washing while held");
+            p.ResetCase(); p.Start_(); p.UseDown(); Tick(p, 0.3f); Check(p.washing, c.id + ": washing while held");
             p.ChangeTool(1); Tick(p, 0.3f); Check(!p.washing && !p.cauteryOn && !p.armed, c.id + ": nothing active after a switch with Space held");
             p.UseUp(); p.UseDown(); Tick(p, 0.2f); Check(p.cauteryOn, c.id + ": fresh press activates"); p.UseUp();
             UnityEngine.Object.DestroyImmediate(p.gameObject);
         }
         // scoring table
         var s1 = Scoring.Score(Grade.Good, 30, 200, 50); var s2 = Scoring.Score(Grade.Good, 100, 1400, 50); var s3 = Scoring.Score(Grade.Unverified, 30, 200, 50);
-        Check(s1.score > 900 && s1.tokens == 10, $"fast clean run scores ~1000 ({s1.score}) and 10 tokens");
+        Check(s1.score > 900 && s1.tokens == 9, $"fast clean run scores ~940 ({s1.score}) and 9 tokens");
+        var s0 = Scoring.Score(Grade.Good, 20, 0, 50); Check(s0.score == 1000 && s0.tokens == 10, "a perfect run scores 1000 and 10 tokens");
         Check(s2.score < 100 && s2.tokens == 1, $"slow bloody run scores low ({s2.score}) but still 1 token");
         Check(s3.score == Mathf.RoundToInt(s1.score * GameConfig.UnverifiedMultiplier), "unverified keeps 60%");
         // leaderboard + profile

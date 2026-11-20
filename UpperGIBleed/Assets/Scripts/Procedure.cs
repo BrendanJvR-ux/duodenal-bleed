@@ -66,10 +66,10 @@ public class Procedure : MonoBehaviour
         tract.WallPoint(lesionTh, c.lesionW, out lesionPos, out lesionNormal);
         blood = new BloodSim(c.lesionW, lesionTh, c.flowDir, c.emit * difficulty);
         tract.SetBloodTexture(blood.tex);
-        Reset();
+        ResetCase();
     }
 
-    public void Reset()
+    public void ResetCase()
     {
         t = 0; z = Case.startZ; v = 0; tipAng = Anatomy.ClockToRad(Case.startTipDeg); tipVel = 0; probeAng = tipAng; toolIdx = 0; loss = 0;
         bleeding = true; controlledAt = null; controlledBy = null; cauteryProg = 0; bandCool = 0; offAccum = 0; bandsLeft = GameConfig.BandsLoaded;
