@@ -129,7 +129,7 @@ public class ProcedureView : MonoBehaviour
     void OnControlled()
     {
         wellGo.SetActive(false);
-        if (p.Case.kind == LesionKind.Ulcer) { ulcerGo.GetComponent<Renderer>().sharedMaterial = Lit(C(214, 190, 150), 0.3f); escharGo.SetActive(true); }
+        if (p.Case.kind == LesionKind.Ulcer) { foreach (var r in ulcerGo.GetComponentsInChildren<Renderer>()) r.sharedMaterial = Lit(C(214, 190, 150), 0.3f); escharGo.SetActive(true); }
         else bandedGo.SetActive(true);
         GameAudio.I?.Good();
     }
