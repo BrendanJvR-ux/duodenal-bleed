@@ -51,22 +51,23 @@ public class Tract : MonoBehaviour
         mf.gameObject.layer = Layer;
         Collider = mf.gameObject.AddComponent<MeshCollider>();
         Collider.sharedMesh = Mesh;
-        // the camera is inside: faces must point inward. Probe from the axis outward; if nothing is hit, flip.
-        var origin = mt.TransformPoint(Vector3.zero); origin = Anatomy.Axis(3f);
-        if (!Physics.Raycast(origin, Vector3.right, out _, 5f, 1 << Layer))
+        // The camera is inside, so faces and normals must point inward. The two are decided independently, because the
+        // FBX import and the mirror above can flip either one on its own.
+        // 1. Winding: probe from the axis outward in a few places; the wall must be hit from inside.
+        int hits = 0;
+        for (int k = 0; k < 4; k++) { float w = 3f + k * 5f; var dir = k % 2 == 0 ? Vector3.right : Vector3.up; if (Physics.Raycast(Anatomy.Axis(w), dir, out _, 5f, 1 << Layer)) hits++; }
+        if (hits < 2)
         {
             Debug.Log("Tract: flipping winding (faces pointed outward)");
             var tri = Mesh.triangles; for (int i = 0; i < tri.Length; i += 3) { int x = tri[i]; tri[i] = tri[i + 2]; tri[i + 2] = x; }
-            Mesh.triangles = tri;
-            var n = Mesh.normals; for (int i = 0; i < n.Length; i++) n[i] = -n[i]; Mesh.normals = n;
-            Collider.sharedMesh = null; Collider.sharedMesh = Mesh;
+            Mesh.triangles = tri; Collider.sharedMesh = null; Collider.sharedMesh = Mesh;
         }
-        else
+        // 2. Normals: compare the world-space normal (full matrix, so the mirror counts) with the direction to the axis.
         {
-            // normals should point inward too (towards the axis)
-            var n = Mesh.normals; var v = Mesh.vertices; int bad = 0;
-            for (int i = 0; i < n.Length; i += 97) { var wp = mt.TransformPoint(v[i]); var toAxis = (Anatomy.Axis(wp.z) - wp); if (Vector3.Dot(mt.TransformDirection(n[i]), toAxis) < 0) bad++; }
-            if (bad > n.Length / 97 / 2) { Debug.Log("Tract: flipping normals"); for (int i = 0; i < n.Length; i++) n[i] = -n[i]; Mesh.normals = n; }
+            var n = Mesh.normals; var v = Mesh.vertices; int bad = 0, total = 0; var m = mt.localToWorldMatrix;
+            for (int i = 0; i < n.Length; i += 97) { var wp = m.MultiplyPoint3x4(v[i]); var toAxis = Anatomy.Axis(wp.z) - wp; if (Vector3.Dot(m.MultiplyVector(n[i]), toAxis) < 0) bad++; total++; }
+            if (bad > total / 2) { Debug.Log($"Tract: flipping normals ({bad}/{total} pointed outward)"); for (int i = 0; i < n.Length; i++) n[i] = -n[i]; Mesh.normals = n; }
+            else Debug.Log($"Tract: normals inward ({bad}/{total} outward)");
         }
 
         var shader = Shader.Find("Universal Render Pipeline/Lit");

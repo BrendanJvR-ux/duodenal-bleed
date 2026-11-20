@@ -57,7 +57,13 @@ public static class SceneBuilder
             mi.SaveAndReimport();
         }
         var ti = AssetImporter.GetAtPath("Assets/Resources/Art/tract_albedo.png") as TextureImporter;
-        if (ti != null) { ti.maxTextureSize = 4096; ti.sRGBTexture = true; ti.mipmapEnabled = true; ti.anisoLevel = 8; ti.SaveAndReimport(); }
+        if (ti != null)
+        {
+            ti.maxTextureSize = 4096; ti.sRGBTexture = true; ti.mipmapEnabled = true; ti.anisoLevel = 8;
+            foreach (var plat in new[] { "WebGL", "Standalone" })
+            { var ps = ti.GetPlatformTextureSettings(plat); ps.overridden = true; ps.maxTextureSize = 4096; ps.format = TextureImporterFormat.Automatic; ps.textureCompression = TextureImporterCompression.CompressedHQ; ti.SetPlatformTextureSettings(ps); }
+            ti.SaveAndReimport();
+        }
         for (int i = 1; i <= 6; i++)
         {
             var ai = AssetImporter.GetAtPath($"Assets/Resources/Art/avatars/avatar_{i}.png") as TextureImporter;
