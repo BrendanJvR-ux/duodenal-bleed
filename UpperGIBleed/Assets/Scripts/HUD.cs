@@ -196,7 +196,7 @@ public class HUD : MonoBehaviour
         void Stat(string label, string val, Color col)
         {
             var box = UIKit.PanelEl(srow.transform, label, UIKit.Panel2); UIKit.Size(box.gameObject, -1, 62); var l = UIKit.Label(box.transform, label, 11, UIKit.Muted, TextAlignmentOptions.Top); UIKit.Fill(l.go, 6);
-            var t = UIKit.Label(box.transform, val, 20, col, TextAlignmentOptions.Bottom, true); UIKit.Fill(t.go, 6);
+            var t = UIKit.Label(box.transform, val, val.Length > 16 ? 13 : 20, col, TextAlignmentOptions.Bottom, true); UIKit.Fill(t.go, 6);   // long values (the technique list) would wrap over the label
         }
         Stat("Case score", $"{r.score} / 1000", r.Fail ? UIKit.Bad : UIKit.Fg); Stat("Coffee tokens", r.Fail ? "☕ 0" : $"☕ {r.tokens}", r.Fail ? UIKit.Bad : UIKit.Coffee);
         Stat("Time", $"{Procedure.Mmss(p.t)} (par {Procedure.Mmss(r.par)})", r.TimeFactor > 0.5f ? UIKit.Fg : UIKit.Warn); Stat("Blood loss", $"{Mathf.RoundToInt(p.loss)} mL", r.BloodFactor > 0.5f ? UIKit.Fg : UIKit.Warn);

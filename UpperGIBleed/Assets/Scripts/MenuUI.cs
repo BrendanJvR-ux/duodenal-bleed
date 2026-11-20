@@ -54,7 +54,7 @@ public class MenuUI : MonoBehaviour
         void Refresh() { for (int i = 1; i <= Profile.AvatarCount; i++) { frames[i].color = i == avatar ? Color.Lerp(UIKit.Panel2, UIKit.Ok, 0.35f) : UIKit.Panel2; UIKit.Outline(frames[i], i == avatar ? UIKit.Ok : UIKit.Line, i == avatar ? 2.5f : 1.5f); } }
         for (int i = 1; i <= Profile.AvatarCount; i++)
         {
-            int idx = i; frames[i] = UIKit.PanelEl(grid.transform, "Avatar" + i, UIKit.Panel2);
+            int idx = i; frames[i] = UIKit.PanelEl(grid.transform, "Avatar" + i, UIKit.Panel2); UIKit.Size(frames[i].gameObject, 72, 72);
             var b = frames[i].gameObject.AddComponent<Button>(); b.targetGraphic = frames[i]; b.onClick.AddListener(() => { avatar = idx; GameAudio.I?.Click(); Refresh(); });
             var im = UIKit.ImageEl(frames[i].transform, Profile.AvatarSprite(i)); UIKit.Fill(im.gameObject, 6);
         }
